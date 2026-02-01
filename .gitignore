@@ -1,0 +1,19 @@
+# FiveM
+cache/
+server-data/
+*.log
+
+# Database
+*.sql
+
+# Keys and secrets
+server.cfg
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
