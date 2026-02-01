@@ -9,6 +9,7 @@ server-data/
 # Keys and secrets
 server.cfg
 *.key
+.env
 
 # OS
 .DS_Store

@@ -48,25 +48,50 @@ FiveMServer/
 
 ## Infrastructure
 
-### VPS (Minimum)
-- 2 CPU cores
-- 4 GB RAM
-- Ubuntu 22.04
+### Tiered Approach (Cost-Effective)
 
-### Software
-- FiveM server artifacts
-- QBCore
-- txAdmin
-- MariaDB
+| Phase | Provider | Instance | Cost | Use Case |
+|-------|----------|----------|------|----------|
+| Dev/Pre-launch | Hetzner Cloud | CX22 (2vCPU/4GB) | ~$5/mo | Development, testing |
+| Small community | Hetzner Cloud | CX32 (4vCPU/8GB) | ~$9/mo | Up to 32 players |
+| GTA 6 Launch | Hetzner CCX | CCX23 (4vCPU/16GB) | ~$35/mo | Production load |
+| High traffic | OVH Game | Dedicated | ~$70/mo | DDoS protection needed |
+
+### Stack
+- **OS:** Ubuntu 22.04 LTS
+- **Containerization:** Docker + Docker Compose
+- **Database:** MariaDB (containerized)
+- **FiveM:** txAdmin + FXServer (containerized)
+- **Reverse Proxy:** Optional Caddy/nginx for web panel
+
+### Why Docker?
+- Same setup works on $5/mo and $500/mo server
+- Easy backups (volume snapshots)
+- Reproducible environments
+- Quick disaster recovery
+
+---
+
+## Quick Start
+
+```bash
+# On fresh Ubuntu 22.04 VPS
+git clone https://github.com/mcmahonl/FiveMServer.git
+cd FiveMServer
+chmod +x setup.sh
+./setup.sh
+```
 
 ---
 
 ## Roadmap
 
 ### Phase 1: Setup
-- [ ] Initialize repo
-- [ ] Set up VPS
-- [ ] Install FiveM + QBCore
+- [x] Initialize repo
+- [x] Design infrastructure
+- [ ] Set up Hetzner VPS
+- [ ] Run setup script
+- [ ] Configure FiveM license key
 
 ### Phase 2: Racing
 - [ ] Vehicle selection menu
