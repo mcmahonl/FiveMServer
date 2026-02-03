@@ -1,41 +1,15 @@
-version: "3.8"
-
 services:
   fivem:
     image: spritsail/fivem:latest
     container_name: fivem-server
     restart: unless-stopped
+    stdin_open: true
+    tty: true
     ports:
-      - "30120:30120"       # FiveM game port
-      - "30120:30120/udp"   # FiveM game port UDP
-      - "40120:40120"       # txAdmin web panel
+      - "30120:30120"
+      - "30120:30120/udp"
+      - "40120:40120"
     volumes:
       - ./server-data:/config
     environment:
       - LICENSE_KEY=${FIVEM_LICENSE_KEY}
-      - RCON_PASSWORD=${RCON_PASSWORD:-changeme}
-    depends_on:
-      - mariadb
-    networks:
-      - fivem-network
-
-  mariadb:
-    image: mariadb:10.11
-    container_name: fivem-db
-    restart: unless-stopped
-    environment:
-      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD:-rootpassword}
-      - MYSQL_DATABASE=qbcore
-      - MYSQL_USER=fivem
-      - MYSQL_PASSWORD=${DB_PASSWORD:-fivempassword}
-    volumes:
-      - db-data:/var/lib/mysql
-    networks:
-      - fivem-network
-
-volumes:
-  db-data:
-
-networks:
-  fivem-network:
-    driver: bridge
