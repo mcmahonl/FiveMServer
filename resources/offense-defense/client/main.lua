@@ -533,17 +533,30 @@ CreateThread(function()
     TriggerServerEvent('od:requestMinigames')
 end)
 
--- J key to join minigame from browser
+-- Register J key for joining minigame
+RegisterCommand('+joinminigame', function()
+    if not Local.inLobby and not Local.inRace and not Local.inEditor then
+        TriggerServerEvent('od:joinFromBrowser')
+    end
+end, false)
+RegisterCommand('-joinminigame', function() end, false)
+RegisterKeyMapping('+joinminigame', 'Join Minigame', 'keyboard', 'j')
+
+-- Disable traffic and peds near player during lobby/race
 CreateThread(function()
     while true do
-        Wait(0)
-        if not Local.inLobby and not Local.inRace and not Local.inEditor then
-            -- J key is control 44
-            if IsControlJustPressed(0, 44) then
-                TriggerServerEvent('od:joinFromBrowser')
-            end
-        else
-            Wait(100)
+        Wait(500)
+        if Local.inLobby or Local.inRace then
+            local pos = GetEntityCoords(PlayerPedId())
+            -- Clear area of vehicles and peds
+            ClearAreaOfVehicles(pos.x, pos.y, pos.z, 100.0, false, false, false, false, false)
+            ClearAreaOfPeds(pos.x, pos.y, pos.z, 100.0, true)
+            -- Disable vehicle and ped spawning
+            SetVehicleDensityMultiplierThisFrame(0.0)
+            SetPedDensityMultiplierThisFrame(0.0)
+            SetRandomVehicleDensityMultiplierThisFrame(0.0)
+            SetParkedVehicleDensityMultiplierThisFrame(0.0)
+            SetScenarioPedDensityMultiplierThisFrame(0.0, 0.0)
         end
     end
 end)
