@@ -1,6 +1,6 @@
 # FiveM Server
 
-Dockerized FiveM server for easy VPS deployment.
+Dockerized FiveM server with custom minigames.
 
 ## Quick Start
 
@@ -29,7 +29,7 @@ cd /opt/FiveMServer
 # Clone official FiveM server data
 git clone https://github.com/citizenfx/cfx-server-data.git server-data
 
-# Create server.cfg (or copy server.cfg.example)
+# Create server.cfg
 cp server.cfg.example server-data/server.cfg
 
 # Set license key
@@ -45,6 +45,37 @@ docker compose up -d
 connect YOUR_SERVER_IP:30120
 ```
 
+## Minigames
+
+### Offense Defense
+2-team race mode (Green vs Purple). Each team has 1 Runner + up to 3 Blockers.
+
+**Player Commands:**
+| Command | Description |
+|---------|-------------|
+| `/join od` | Join game (auto-assigns team) |
+
+**Admin Commands:**
+| Command | Description |
+|---------|-------------|
+| `/odedit <mapname>` | Start race editor |
+| `/odstart` | Force start game |
+| `/odstop` | Stop current game |
+
+**Roles:**
+- **Runner** - Drives Voodoo, collects checkpoints, first to finish wins
+- **Blocker** - Drives Insurgent/Kuruma/Zentorno, protects Runner, blocks enemies
+
+**Race Editor (Admins):**
+| Key | Action |
+|-----|--------|
+| `E` | Add checkpoint |
+| `X` | Remove last checkpoint |
+| `L` | Set lobby spawn |
+| `G` | Set start grid |
+| `F5` | Save map |
+| `ESC` | Exit editor |
+
 ## Server Management
 
 ```bash
@@ -56,12 +87,25 @@ docker compose down             # Stop
 docker compose pull && docker compose up -d  # Update
 ```
 
+## Permissions
+
+Configured in `server-data/resources/[minigames]/offense-defense/config.lua`:
+
+```lua
+Config.Admins = {
+    'mcmahonl',
+}
+```
+
+Admins can: edit races, force start/stop games
+Players can: join games
+
 ## File Locations
 
 | Path | Purpose |
 |------|---------|
 | `server-data/server.cfg` | Server config |
-| `server-data/resources/` | Add resources here |
+| `server-data/resources/[minigames]/` | Custom minigames |
 | `.env` | License key |
 
 ## Ports
@@ -73,42 +117,31 @@ docker compose pull && docker compose up -d  # Update
 
 ## Development Workflow
 
-Development happens directly on the production server for fast iteration. To sync changes back to GitHub:
+Development happens directly on the production server. To sync changes back to GitHub:
 
-### 1. Copy changes from server to local
 ```bash
-# From local machine
-scp -i ~/.ssh/id_ed25519 root@5.78.177.239:/opt/FiveMServer/docker-compose.yml ~/Desktop/FiveMServer/
-scp -i ~/.ssh/id_ed25519 root@5.78.177.239:/opt/FiveMServer/server-data/server.cfg ~/Desktop/FiveMServer/server.cfg.example
-# Add other modified files as needed
-```
+# From local machine - copy changed files
+scp -i ~/.ssh/id_ed25519 root@5.78.177.239:/opt/FiveMServer/path/to/file ~/Desktop/FiveMServer/
 
-### 2. Commit and push
-```bash
+# Commit and push
 cd ~/Desktop/FiveMServer
 git add .
 git commit -m "Description of changes"
 git push origin main
 ```
 
-### 3. For larger changes, create a PR
-```bash
-git checkout -b feature/my-feature
-git add .
-git commit -m "Description"
-git push -u origin feature/my-feature
-gh pr create --title "My feature" --body "Description"
-```
+For architecture details, see [STRUCTURE.md](STRUCTURE.md).
 
 ## Agent Notes
 
-For Claude Code sessions working on this project:
+For Claude Code sessions:
 - **Server IP:** 5.78.177.239
 - **SSH:** `ssh -i ~/.ssh/id_ed25519 root@5.78.177.239`
 - **Server path:** `/opt/FiveMServer/`
 - **Logs:** `docker logs -f fivem-server`
 - **Restart:** `cd /opt/FiveMServer && docker compose restart`
-- Edit directly on server, then sync to local and push to GitHub
+- Edit directly on server, sync to local, push to GitHub
+- See [STRUCTURE.md](STRUCTURE.md) for codebase architecture
 
 ## License
 

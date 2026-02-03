@@ -1,0 +1,88 @@
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+body { background: transparent; color: white; overflow: hidden; }
+.hidden { display: none !important; }
+
+/* Online bar */
+#online-bar {
+    position: fixed;
+    top: 10px; right: 10px;
+    background: rgba(0,0,0,0.7);
+    border-radius: 8px;
+    padding: 10px 15px;
+    min-width: 150px;
+    z-index: 1000;
+}
+.online-title { font-size: 11px; letter-spacing: 2px; opacity: 0.6; margin-bottom: 8px; }
+.online-player { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; }
+.online-name { opacity: 0.9; }
+.online-role { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+.online-role.admin { background: #FFD700; color: #000; }
+.online-role.player { background: #444; color: #fff; }
+
+/* Lobby */
+#lobby {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.85) 100%);
+    display: flex; flex-direction: column; align-items: center; padding: 40px;
+}
+.header { text-align: center; margin-bottom: 30px; }
+.header h1 { font-size: 52px; font-weight: 900; letter-spacing: 10px; text-shadow: 0 0 40px rgba(255,255,255,0.5); }
+.subtitle { font-size: 18px; letter-spacing: 4px; opacity: 0.7; margin-top: 8px; }
+
+.teams-container { display: flex; justify-content: center; align-items: flex-start; gap: 80px; margin-bottom: 40px; }
+.team { width: 300px; padding: 25px; border-radius: 12px; background: rgba(0,0,0,0.6); }
+.team-green { border: 3px solid #32CD32; box-shadow: 0 0 30px rgba(50,205,50,0.4); }
+.team-purple { border: 3px solid #9400D3; box-shadow: 0 0 30px rgba(148,0,211,0.4); }
+.team-header { font-size: 26px; font-weight: 700; letter-spacing: 3px; margin-bottom: 10px; }
+.team-green .team-header { color: #32CD32; }
+.team-purple .team-header { color: #9400D3; }
+.team-count { font-size: 42px; font-weight: 700; margin-bottom: 15px; }
+.team-green .team-count { color: #32CD32; }
+.team-purple .team-count { color: #9400D3; }
+.player-list { min-height: 140px; }
+.player { padding: 10px 14px; margin: 6px 0; border-radius: 6px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+.team-green .player { background: rgba(50,205,50,0.2); }
+.team-purple .player { background: rgba(148,0,211,0.2); }
+.player-role { font-size: 11px; padding: 3px 10px; border-radius: 4px; font-weight: 700; }
+.role-runner { background: #FFD700; color: #000; }
+.role-blocker { background: #555; color: #fff; }
+.player-ready::after { content: ' ✓'; color: #0f0; font-weight: bold; }
+
+.timer-container { text-align: center; padding: 20px 40px; }
+.timer { font-size: 96px; font-weight: 900; text-shadow: 0 0 50px rgba(255,255,255,0.6); line-height: 1; }
+.timer-label { font-size: 14px; letter-spacing: 4px; opacity: 0.7; margin-top: 10px; }
+
+.role-display { text-align: center; margin-bottom: 30px; }
+.role-label { font-size: 14px; letter-spacing: 2px; opacity: 0.7; margin-bottom: 8px; }
+.role { font-size: 40px; font-weight: 900; letter-spacing: 5px; }
+.role-runner-text { color: #FFD700; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
+.role-blocker-text { color: #AAA; }
+
+.car-selection { text-align: center; margin-bottom: 30px; }
+.car-label { font-size: 14px; letter-spacing: 2px; opacity: 0.7; margin-bottom: 15px; }
+.car-options { display: flex; gap: 15px; justify-content: center; margin-bottom: 15px; }
+.car-option { width: 100px; height: 60px; border: 2px solid #444; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: rgba(0,0,0,0.4); }
+.car-option.selected { border-color: #fff; background: rgba(255,255,255,0.15); transform: scale(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.3); }
+.car-name { font-size: 22px; font-weight: 600; }
+
+.controls { position: fixed; bottom: 40px; font-size: 14px; opacity: 0.5; }
+.key { display: inline-block; padding: 5px 12px; background: rgba(255,255,255,0.15); border-radius: 5px; margin: 0 5px; font-weight: 700; }
+
+/* Race countdown */
+#race-countdown {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.race-countdown-number { font-size: 280px; font-weight: 900; line-height: 1; text-shadow: 0 0 100px rgba(255,255,255,0.8); animation: pulse 1s ease-in-out; }
+.race-countdown-number.go { color: #32CD32; text-shadow: 0 0 100px rgba(50,205,50,0.8); }
+.race-countdown-text { font-size: 36px; letter-spacing: 15px; opacity: 0.7; margin-top: 20px; }
+@keyframes pulse { 0% { transform: scale(1.3); opacity: 0; } 50% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.8; } }
+
+/* Editor */
+#editor { position: fixed; top: 60px; left: 20px; }
+.editor-panel { background: rgba(0,0,0,0.85); border: 2px solid #FFD700; border-radius: 10px; padding: 20px; min-width: 250px; }
+.editor-title { font-size: 20px; font-weight: 700; color: #FFD700; letter-spacing: 3px; margin-bottom: 15px; text-align: center; }
+.editor-info { margin-bottom: 20px; font-size: 14px; line-height: 1.8; }
+.editor-info span { color: #FFD700; font-weight: 600; }
+.editor-controls { font-size: 13px; line-height: 2; opacity: 0.8; }
+.editor-controls .key { background: #FFD700; color: #000; padding: 2px 8px; margin-right: 8px; }

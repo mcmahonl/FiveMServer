@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Online players overlay (always visible) -->
+    <div id="online-bar">
+        <div class="online-title">ONLINE</div>
+        <div id="online-players"></div>
+    </div>
+
+    <!-- Lobby UI -->
+    <div id="lobby" class="hidden">
+        <div class="header">
+            <h1>OFFENSE DEFENSE</h1>
+            <div class="subtitle">Runners vs Blockers</div>
+        </div>
+        <div class="teams-container">
+            <div class="team team-green">
+                <div class="team-header">TEAM GREEN</div>
+                <div class="team-count"><span id="green-count">0</span>/4</div>
+                <div class="player-list" id="green-players"></div>
+            </div>
+            <div class="timer-container">
+                <div id="timer" class="timer">--</div>
+                <div id="timer-label" class="timer-label">WAITING FOR PLAYERS</div>
+            </div>
+            <div class="team team-purple">
+                <div class="team-header">TEAM PURPLE</div>
+                <div class="team-count"><span id="purple-count">0</span>/4</div>
+                <div class="player-list" id="purple-players"></div>
+            </div>
+        </div>
+        <div class="role-display">
+            <div class="role-label">YOUR ROLE</div>
+            <div id="role" class="role">RUNNER</div>
+        </div>
+        <div class="car-selection">
+            <div class="car-label">SELECT VEHICLE</div>
+            <div class="car-options" id="car-options"></div>
+            <div id="car-name" class="car-name">Declasse Voodoo</div>
+        </div>
+        <div class="controls">
+            <span class="key">←</span><span class="key">→</span> Change Car
+            <span class="key">ENTER</span> Ready Up
+            <span class="key">ESC</span> Leave
+        </div>
+    </div>
+    
+    <!-- Race countdown -->
+    <div id="race-countdown" class="hidden">
+        <div class="race-countdown-number" id="countdown-number">3</div>
+        <div class="race-countdown-text" id="countdown-text">GET READY</div>
+    </div>
+    
+    <!-- Editor UI -->
+    <div id="editor" class="hidden">
+        <div class="editor-panel">
+            <div class="editor-title">RACE EDITOR</div>
+            <div class="editor-info">
+                <div>Map: <span id="editor-map">untitled</span></div>
+                <div>Checkpoints: <span id="editor-cp-count">0</span></div>
+                <div>Lobby set: <span id="editor-lobby">NO</span></div>
+                <div>Start grid: <span id="editor-grid">NO</span></div>
+            </div>
+            <div class="editor-controls">
+                <div><span class="key">E</span> Add Checkpoint</div>
+                <div><span class="key">X</span> Remove Last</div>
+                <div><span class="key">L</span> Set Lobby Here</div>
+                <div><span class="key">G</span> Set Start Grid</div>
+                <div><span class="key">F5</span> Save Map</div>
+                <div><span class="key">ESC</span> Exit Editor</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
