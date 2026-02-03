@@ -81,6 +81,15 @@ RegisterNetEvent('od:leaveLobby', function()
     SpawnAtRandomRoad(true)
 end)
 
+-- Calculate heading from one point to another
+function GetHeadingToPoint(from, to)
+    local dx = to.x - from.x
+    local dy = to.y - from.y
+    local heading = math.deg(math.atan(dx, dy))
+    if heading < 0 then heading = heading + 360 end
+    return heading
+end
+
 function SpawnAtRandomRoad(withCar)
     local spawn = RoadSpawns[math.random(#RoadSpawns)]
     local ped = PlayerPedId()
@@ -453,7 +462,13 @@ CreateThread(function()
 
                     if Local.raceVehicle and DoesEntityExist(Local.raceVehicle) then
                         SetEntityCoords(Local.raceVehicle, respawnPos.x, respawnPos.y, respawnPos.z + 1.0, false, false, false, true)
-                        if respawnPos.w then
+                        -- Calculate heading towards next checkpoint
+                        local checkpoints = GetCheckpoints()
+                        local nextCp = checkpoints[Local.currentCheckpoint]
+                        if nextCp then
+                            local heading = GetHeadingToPoint(respawnPos, nextCp)
+                            SetEntityHeading(Local.raceVehicle, heading)
+                        elseif respawnPos.w then
                             SetEntityHeading(Local.raceVehicle, respawnPos.w)
                         end
                         SetVehicleOnGroundProperly(Local.raceVehicle)
