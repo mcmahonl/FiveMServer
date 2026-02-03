@@ -11,11 +11,20 @@
         <div id="online-players"></div>
     </div>
 
+    <!-- Results overlay (shown after race) -->
+    <div id="results" class="hidden">
+        <div class="results-content">
+            <div id="results-title" class="results-title">TEAM GREEN WINS!</div>
+            <div id="results-change" class="results-change">+500</div>
+            <div id="results-total" class="results-total">1500 POINTS</div>
+        </div>
+    </div>
+
     <!-- Lobby UI -->
     <div id="lobby" class="hidden">
         <div class="header">
             <h1>OFFENSE DEFENSE</h1>
-            <div class="subtitle">Runners vs Blockers</div>
+            <div class="subtitle">Green vs Purple</div>
         </div>
         <div class="teams-container">
             <div class="team team-green">
@@ -26,6 +35,14 @@
             <div class="timer-container">
                 <div id="timer" class="timer">--</div>
                 <div id="timer-label" class="timer-label">WAITING FOR PLAYERS</div>
+                <div id="pot-display" class="pot-display">
+                    <div class="pot-label">JACKPOT PREVIEW</div>
+                    <div id="pot-amount" class="pot-amount">0</div>
+                    <div class="pot-details">
+                        <div id="your-wager" class="your-wager">Your wager: 0</div>
+                        <div id="your-winnings" class="your-winnings">If you win: +0</div>
+                    </div>
+                </div>
             </div>
             <div class="team team-purple">
                 <div class="team-header">TEAM PURPLE</div>
@@ -43,12 +60,27 @@
             <div id="car-name" class="car-name">Declasse Voodoo</div>
         </div>
         <div class="controls">
-            <span class="key">←</span><span class="key">→</span> Change Car
-            <span class="key">ENTER</span> Ready Up
+            <span class="key">G</span><span class="key">P</span> Team
+            <span class="key">R</span><span class="key">B</span> Role
+            <span class="key">A</span><span class="key">D</span> Car
+            <span class="key">ENTER</span> Ready
             <span class="key">ESC</span> Leave
         </div>
     </div>
     
+    <!-- Race HUD (during race) -->
+    <div id="race-hud" class="hidden">
+        <div class="hud-positions">
+            <div id="pos-1st" class="hud-position first">1ST <span class="team-name">GREEN</span></div>
+            <div id="pos-2nd" class="hud-position second">2ND <span class="team-name">PURPLE</span></div>
+        </div>
+        <div class="hud-checkpoint">
+            <div class="cp-label">CHECKPOINT</div>
+            <div id="cp-progress" class="cp-progress">0 / 37</div>
+            <div id="cp-distance" class="cp-distance">250m</div>
+        </div>
+    </div>
+
     <!-- Race countdown -->
     <div id="race-countdown" class="hidden">
         <div class="race-countdown-number" id="countdown-number">3</div>
@@ -66,11 +98,11 @@
                 <div>Start grid: <span id="editor-grid">NO</span></div>
             </div>
             <div class="editor-controls">
-                <div><span class="key">E</span> Add Checkpoint</div>
-                <div><span class="key">X</span> Remove Last</div>
-                <div><span class="key">L</span> Set Lobby Here</div>
+                <div><span class="key">X</span> Add Checkpoint</div>
+                <div><span class="key">E</span> Remove Last</div>
+                <div><span class="key">H</span> Set Lobby Here</div>
                 <div><span class="key">G</span> Set Start Grid</div>
-                <div><span class="key">F5</span> Save Map</div>
+                <div><span class="key">Z</span> Save Map</div>
                 <div><span class="key">ESC</span> Exit Editor</div>
             </div>
         </div>

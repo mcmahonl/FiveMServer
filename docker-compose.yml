@@ -13,3 +13,27 @@ services:
       - ./server-data:/config
     environment:
       - LICENSE_KEY=${FIVEM_LICENSE_KEY}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  mariadb:
+    image: mariadb:11
+    container_name: fivem-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-fivem_root_pass}
+      MYSQL_DATABASE: fivem
+      MYSQL_USER: fivem
+      MYSQL_PASSWORD: ${DB_PASSWORD:-fivem_pass}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:

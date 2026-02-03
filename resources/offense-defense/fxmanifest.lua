@@ -3,7 +3,11 @@ game 'gta5'
 
 name 'offense-defense'
 description 'Offense Defense - Runners vs Blockers'
-version '0.3.0'
+version '0.4.0'
+
+dependency 'oxmysql'
+
+lua54 'yes'
 
 ui_page 'html/index.html'
 
@@ -20,6 +24,7 @@ shared_scripts {
 }
 
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'server/*.lua'
 }
 

@@ -16,7 +16,7 @@ Config.Roles = {
 
 -- Admin list (by identifier)
 Config.Admins = {
-    'mcmahonl',  -- Add Steam/license identifiers here
+    'license:262c5c9e7a9f0346914fd42b4ae722dae5c1ee09',
 }
 
 Config.Teams = {
@@ -42,5 +42,12 @@ Config.Settings = {
     spawnSpacing = 6.0,
     announcementInterval = 120000,
     allowSoloTest = true,
-    defaultMap = 'test',
+    defaultMap = 'od1',
+}
+
+Config.Points = {
+    startingPoints = 10000,
+    wagerPercent = 0.10,  -- 10% of total points
+    minimumWager = 100,
+    bonusPot = 1000,  -- Extra points added to every jackpot
 }

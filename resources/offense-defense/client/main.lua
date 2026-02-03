@@ -19,6 +19,8 @@ RegisterNUICallback('selectCar', function(data, cb)
     cb('ok')
 end)
 RegisterNUICallback('editorExit', function(_, cb) ExitEditor() cb('ok') end)
+RegisterNUICallback('switchTeam', function(data, cb) TriggerServerEvent('od:switchTeam', data.team) cb('ok') end)
+RegisterNUICallback('switchRole', function(data, cb) TriggerServerEvent('od:switchRole', data.role) cb('ok') end)
 
 -- Online players update
 RegisterNetEvent('od:updateOnline', function(players)
@@ -26,11 +28,12 @@ RegisterNetEvent('od:updateOnline', function(players)
 end)
 
 -- Join lobby
-RegisterNetEvent('od:joinLobby', function(team, role, slotIndex)
+RegisterNetEvent('od:joinLobby', function(team, role, slotIndex, mapData)
     Local.inLobby = true
     Local.team = team
     Local.role = role
-    
+    Local.mapData = mapData
+
     -- Get spawn from loaded map or use defaults
     local spawn = GetLobbySpawn(team, slotIndex)
     
@@ -53,6 +56,18 @@ RegisterNetEvent('od:leaveLobby', function()
     SendNUIMessage({ type = 'hideLobby' })
 end)
 
+RegisterNetEvent('od:updatePlayer', function(team, role, slotIndex)
+    Local.team = team
+    Local.role = role
+    DeletePreviewVehicle()
+    local spawn = GetLobbySpawn(team, slotIndex)
+    local ped = PlayerPedId()
+    SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
+    SetEntityHeading(ped, spawn.w)
+    SpawnPreviewVehicle(role, team, spawn)
+    SendNUIMessage({ type = 'showLobby', team = team, role = role })
+end)
+
 RegisterNetEvent('od:updateLobby', function(green, purple)
     SendNUIMessage({ type = 'updateLobby', players = { green = green, purple = purple } })
 end)
@@ -62,13 +77,27 @@ RegisterNetEvent('od:lobbyCountdown', function(seconds)
     PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', false)
 end)
 
+RegisterNetEvent('od:updatePot', function(pot, wager, teamSize)
+    SendNUIMessage({ type = 'updatePot', pot = pot, wager = wager, teamSize = teamSize or 1 })
+end)
+
+RegisterNetEvent('od:showResults', function(data)
+    SendNUIMessage({ type = 'showResults', data = data })
+    if data.won then
+        PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', false)
+    else
+        PlaySoundFrontend(-1, 'CHECKPOINT_MISSED', 'HUD_MINI_GAME_SOUNDSET', false)
+    end
+end)
+
 -- Start race
-RegisterNetEvent('od:startRace', function(team, slotIndex, vehicleModel, role)
+RegisterNetEvent('od:startRace', function(team, slotIndex, vehicleModel, role, mapData)
     Local.inLobby = false
     Local.inRace = true
     Local.team = team
     Local.role = role
     Local.currentCheckpoint = 1
+    Local.mapData = mapData
     
     SetNuiFocus(false, false)
     SendNUIMessage({ type = 'hideLobby' })
@@ -92,21 +121,34 @@ RegisterNetEvent('od:startRace', function(team, slotIndex, vehicleModel, role)
         FreezeEntityPosition(Local.raceVehicle, false)
         Wait(1000)
         SendNUIMessage({ type = 'hideRaceCountdown' })
+        SendNUIMessage({ type = 'showRaceHud' })
     end)
 end)
 
 RegisterNetEvent('od:endRace', function()
     Local.inRace = false
-    if Local.raceVehicle and DoesEntityExist(Local.raceVehicle) then
-        DeleteEntity(Local.raceVehicle)
-    end
-    Local.raceVehicle = nil
+    DeleteRaceVehicle()
     SendNUIMessage({ type = 'hideRaceCountdown' })
+    SendNUIMessage({ type = 'hideRaceHud' })
+end)
+
+RegisterNetEvent('od:updatePositions', function(positions)
+    Local.positions = positions
 end)
 
 -- Spawns (with fallback defaults)
 function GetLobbySpawn(team, slot)
-    -- TODO: Load from map file
+    -- Use map data if available
+    if Local.mapData and Local.mapData.lobbySpawn then
+        local base = Local.mapData.lobbySpawn
+        local spacing = Config.Settings.spawnSpacing
+        local offset = (slot - 1) * spacing
+        -- Team 1 on left, Team 2 on right
+        local sideOffset = team == 1 and -10 or 10
+        return vector4(base.x + sideOffset, base.y - offset, base.z, base.w + (team == 1 and 0 or 180))
+    end
+
+    -- Fallback defaults
     local defaults = {
         [1] = {
             vector4(-1047.0, -2972.0, 13.9, 60.0),
@@ -125,6 +167,17 @@ function GetLobbySpawn(team, slot)
 end
 
 function GetRaceSpawn(team, slot)
+    -- Use map data if available
+    if Local.mapData and Local.mapData.startGrid then
+        local base = Local.mapData.startGrid
+        local spacing = Config.Settings.spawnSpacing
+        local offset = (slot - 1) * spacing
+        -- Team 1 in front, Team 2 behind
+        local rowOffset = team == 1 and 0 or 8
+        return vector4(base.x - offset * 0.7, base.y - offset * 0.7 - rowOffset, base.z, base.w)
+    end
+
+    -- Fallback defaults
     local defaults = {
         [1] = {
             vector4(-1497.0, -2595.0, 13.9, 240.0),
@@ -143,6 +196,16 @@ function GetRaceSpawn(team, slot)
 end
 
 function GetCheckpoints()
+    -- Use map data if available
+    if Local.mapData and Local.mapData.checkpoints and #Local.mapData.checkpoints > 0 then
+        local cps = {}
+        for _, cp in ipairs(Local.mapData.checkpoints) do
+            table.insert(cps, vector3(cp.x, cp.y, cp.z))
+        end
+        return cps
+    end
+
+    -- Fallback defaults
     return {
         vector3(-1600.0, -2714.0, 13.9),
         vector3(-1750.0, -2920.0, 13.9),
@@ -191,10 +254,30 @@ function UpdatePreviewVehicle(carIndex)
 end
 
 function DeletePreviewVehicle()
-    if Local.previewVehicle and DoesEntityExist(Local.previewVehicle) then
-        DeleteEntity(Local.previewVehicle)
+    if Local.previewVehicle then
+        if DoesEntityExist(Local.previewVehicle) then
+            SetEntityAsMissionEntity(Local.previewVehicle, false, true)
+            DeleteVehicle(Local.previewVehicle)
+            DeleteEntity(Local.previewVehicle)
+        end
+        Local.previewVehicle = nil
     end
-    Local.previewVehicle = nil
+end
+
+function DeleteRaceVehicle()
+    if Local.raceVehicle then
+        if DoesEntityExist(Local.raceVehicle) then
+            local ped = PlayerPedId()
+            if GetVehiclePedIsIn(ped, false) == Local.raceVehicle then
+                TaskLeaveVehicle(ped, Local.raceVehicle, 16)
+                Wait(500)
+            end
+            SetEntityAsMissionEntity(Local.raceVehicle, false, true)
+            DeleteVehicle(Local.raceVehicle)
+            DeleteEntity(Local.raceVehicle)
+        end
+        Local.raceVehicle = nil
+    end
 end
 
 function SpawnRaceVehicle(model, spawn)
@@ -214,20 +297,37 @@ function SpawnRaceVehicle(model, spawn)
     SetModelAsNoLongerNeeded(hash)
 end
 
--- Checkpoint logic
+-- Checkpoint logic and HUD updates
 CreateThread(function()
     while true do
         Wait(100)
-        if Local.inRace and Local.role == 'runner' then
+        if Local.inRace then
             local checkpoints = GetCheckpoints()
             local cp = checkpoints[Local.currentCheckpoint]
+            local dist = 0
+
             if cp then
-                local dist = #(GetEntityCoords(PlayerPedId()) - cp)
+                dist = math.floor(#(GetEntityCoords(PlayerPedId()) - cp))
+            end
+
+            -- Update HUD
+            SendNUIMessage({
+                type = 'updateRaceHud',
+                checkpoint = Local.currentCheckpoint - 1,
+                totalCheckpoints = #checkpoints,
+                distance = dist,
+                positions = Local.positions or {}
+            })
+
+            -- Runner checkpoint detection
+            if Local.role == 'runner' and cp then
                 if dist < Config.Settings.checkpointRadius then
                     PlaySoundFrontend(-1, 'CHECKPOINT_NORMAL', 'HUD_MINI_GAME_SOUNDSET', false)
                     TriggerServerEvent('od:checkpointReached', Local.currentCheckpoint, #checkpoints)
                     Local.currentCheckpoint = Local.currentCheckpoint + 1
                 end
+                -- Send progress to server for position tracking
+                TriggerServerEvent('od:updateProgress', Local.currentCheckpoint, dist)
             end
         end
     end

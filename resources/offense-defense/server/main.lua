@@ -8,6 +8,28 @@ GameState = {
 }
 
 OnlinePlayers = {}  -- [source] = { name, role }
+CurrentGameId = nil -- For game history tracking
+LoadedMap = nil -- Currently loaded map data
+
+-- Load map from file
+function LoadMap(mapName)
+    local data = LoadResourceFile(GetCurrentResourceName(), 'maps/' .. mapName .. '.json')
+    if data then
+        LoadedMap = json.decode(data)
+        LoadedMap.name = mapName
+        print('[OD] Loaded map: ' .. mapName)
+        return true
+    end
+    return false
+end
+
+-- Load default map on start
+CreateThread(function()
+    Wait(100)
+    if not LoadMap(Config.Settings.defaultMap) then
+        print('[OD] No default map found, using hardcoded spawns')
+    end
+end)
 
 -- Check if player is admin
 function IsAdmin(source)
@@ -50,9 +72,14 @@ AddEventHandler('playerDropped', function()
 end)
 
 function BroadcastOnlinePlayers()
-    local list = {}
-    for src, data in pairs(OnlinePlayers) do
-        table.insert(list, { name = data.name, role = data.role })
+    -- Use points-sorted list if available
+    local list = exports['offense-defense']:GetOnlinePlayersWithPoints()
+    if not list or #list == 0 then
+        -- Fallback without points
+        list = {}
+        for src, data in pairs(OnlinePlayers) do
+            table.insert(list, { name = data.name, role = data.role, points = 0, rank = 0 })
+        end
     end
     TriggerClientEvent('od:updateOnline', -1, list)
 end
@@ -82,7 +109,7 @@ RegisterCommand('odedit', function(source, args)
         TriggerClientEvent('chat:addMessage', source, { args = { '^1[OD]', 'Admins only!' } })
         return
     end
-    local mapName = args[1] or 'untitled'
+    local mapName = args[1] or 'od1'
     TriggerClientEvent('od:startEditor', source, mapName)
 end, false)
 
@@ -115,15 +142,24 @@ function JoinLobby(source)
         return
     end
     
-    local role = #GameState.teams[team] == 0 and 'runner' or 'blocker'
+    -- Check if team already has a runner
+    local hasRunner = false
+    for _, pid in ipairs(GameState.teams[team]) do
+        if GameState.players[pid] and GameState.players[pid].role == 'runner' then
+            hasRunner = true
+            break
+        end
+    end
+    local role = hasRunner and 'blocker' or 'runner'
     GameState.players[source] = { team = team, role = role, ready = false, vehicle = 1, name = GetPlayerName(source) }
     table.insert(GameState.teams[team], source)
     
     if GameState.phase == 'idle' then GameState.phase = 'lobby' end
     
     local slotIndex = #GameState.teams[team]
-    TriggerClientEvent('od:joinLobby', source, team, role, slotIndex)
+    TriggerClientEvent('od:joinLobby', source, team, role, slotIndex, LoadedMap)
     BroadcastLobbyState()
+    BroadcastPotPreview()
     
     TriggerClientEvent('chat:addMessage', -1, { args = { '^2[OD]', GetPlayerName(source) .. ' joined Team ' .. Config.Teams[team].name .. ' as ' .. role:upper() } })
     CheckAutoStart()
@@ -171,6 +207,25 @@ function BroadcastLobbyState()
     for pid, _ in pairs(GameState.players) do
         TriggerClientEvent('od:updateLobby', pid, green, purple)
     end
+    BroadcastPotPreview()
+end
+
+function BroadcastPotPreview()
+    -- Calculate estimated pot (bonus + all wagers)
+    local totalPot = Config.Points.bonusPot or 0
+    local wagers = {}
+
+    for pid, data in pairs(GameState.players) do
+        local wager = exports['offense-defense']:CalculateWager(pid)
+        wagers[pid] = wager
+        totalPot = totalPot + wager
+    end
+
+    -- Send to each player with their team size for win calculation
+    for pid, data in pairs(GameState.players) do
+        local teamSize = #GameState.teams[data.team]
+        TriggerClientEvent('od:updatePot', pid, totalPot, wagers[pid] or 0, teamSize)
+    end
 end
 
 function CheckAutoStart()
@@ -188,7 +243,16 @@ function StartCountdown()
     if GameState.phase == 'countdown' then return end
     GameState.phase = 'countdown'
     GameState.countdown = Config.Settings.lobbyCountdown
-    
+
+    -- Collect wagers into pot
+    local pot = exports['offense-defense']:CollectPot()
+
+    -- Broadcast pot amount to lobby players (use stored wager, not recalculated)
+    for pid, _ in pairs(GameState.players) do
+        local wager = exports['offense-defense']:GetPlayerWager(pid)
+        TriggerClientEvent('od:updatePot', pid, pot, wager)
+    end
+
     CreateThread(function()
         while GameState.countdown > 0 and GameState.phase == 'countdown' do
             for pid, _ in pairs(GameState.players) do
@@ -203,37 +267,159 @@ end
 
 function StartRace()
     GameState.phase = 'racing'
-    
+
+    -- Create game history record
+    CurrentGameId = exports['offense-defense']:CreateGameRecord(GameState.currentMap)
+
     for pid, data in pairs(GameState.players) do
         local slotIndex = 1
         for i, p in ipairs(GameState.teams[data.team]) do
             if p == pid then slotIndex = i break end
         end
         local vehicle = data.role == 'runner' and Config.Vehicles.runner.model or Config.Vehicles.blocker[data.vehicle].model
-        TriggerClientEvent('od:startRace', pid, data.team, slotIndex, vehicle, data.role)
+        TriggerClientEvent('od:startRace', pid, data.team, slotIndex, vehicle, data.role, LoadedMap)
     end
 end
 
 function EndRace(winningTeam)
+    -- Distribute pot and get results
+    local results = {}
     if winningTeam > 0 then
+        results = exports['offense-defense']:DistributePot(winningTeam, CurrentGameId)
+        exports['offense-defense']:EndGameRecord(CurrentGameId, winningTeam)
         TriggerClientEvent('chat:addMessage', -1, { args = { '^2[OD]', 'Team ' .. Config.Teams[winningTeam].name .. ' WINS!' } })
     end
+
+    -- Send results to each player with their personal +/- change
     for pid, _ in pairs(GameState.players) do
-        TriggerClientEvent('od:endRace', pid)
+        local playerResult = results[pid] or { won = false, change = 0, newTotal = 0 }
+        TriggerClientEvent('od:showResults', pid, {
+            won = playerResult.won,
+            change = playerResult.change,
+            newTotal = playerResult.newTotal,
+            winningTeam = winningTeam,
+            teamName = winningTeam > 0 and Config.Teams[winningTeam].name or 'None'
+        })
     end
-    GameState.phase = 'idle'
-    GameState.players = {}
-    GameState.teams = { [1] = {}, [2] = {} }
+
+    -- Delayed cleanup
+    SetTimeout(8000, function()
+        for pid, _ in pairs(GameState.players) do
+            TriggerClientEvent('od:endRace', pid)
+        end
+        GameState.phase = 'idle'
+        GameState.players = {}
+        GameState.teams = { [1] = {}, [2] = {} }
+        CurrentGameId = nil
+        BroadcastOnlinePlayers()
+    end)
 end
 
 -- Events
 RegisterNetEvent('od:ready', function() SetReady(source) end)
 RegisterNetEvent('od:leave', function() LeaveLobby(source) end)
 RegisterNetEvent('od:selectCar', function(car) SetVehicle(source, car) end)
+
+RegisterNetEvent('od:switchTeam', function(newTeam)
+    local src = source
+    local data = GameState.players[src]
+    if not data then return end
+    if data.ready then return end -- Can't switch if ready
+    if newTeam == data.team then return end -- Already on this team
+    if #GameState.teams[newTeam] >= Config.Settings.maxTeamSize then
+        TriggerClientEvent('chat:addMessage', src, { args = { '^1[OD]', 'Team is full!' } })
+        return
+    end
+
+    -- Remove from old team
+    for i, pid in ipairs(GameState.teams[data.team]) do
+        if pid == src then table.remove(GameState.teams[data.team], i) break end
+    end
+
+    -- Check if runner spot available on new team
+    local hasRunner = false
+    for _, pid in ipairs(GameState.teams[newTeam]) do
+        if GameState.players[pid] and GameState.players[pid].role == 'runner' then
+            hasRunner = true
+            break
+        end
+    end
+
+    -- Add to new team
+    data.team = newTeam
+    data.role = hasRunner and 'blocker' or data.role
+    table.insert(GameState.teams[newTeam], src)
+
+    -- Update client
+    local slotIndex = #GameState.teams[newTeam]
+    TriggerClientEvent('od:updatePlayer', src, newTeam, data.role, slotIndex)
+    BroadcastLobbyState()
+end)
+
+RegisterNetEvent('od:switchRole', function(newRole)
+    local src = source
+    local data = GameState.players[src]
+    if not data then return end
+    if data.ready then return end -- Can't switch if ready
+    if newRole == data.role then return end
+
+    if newRole == 'runner' then
+        -- Check if team already has a runner
+        for _, pid in ipairs(GameState.teams[data.team]) do
+            if pid ~= src and GameState.players[pid] and GameState.players[pid].role == 'runner' then
+                TriggerClientEvent('chat:addMessage', src, { args = { '^1[OD]', 'Team already has a runner!' } })
+                return
+            end
+        end
+    end
+
+    data.role = newRole
+    data.vehicle = 1 -- Reset vehicle selection
+    local slotIndex = 1
+    for i, pid in ipairs(GameState.teams[data.team]) do
+        if pid == src then slotIndex = i break end
+    end
+    TriggerClientEvent('od:updatePlayer', src, data.team, data.role, slotIndex)
+    BroadcastLobbyState()
+end)
 RegisterNetEvent('od:checkpointReached', function(idx, total)
     local data = GameState.players[source]
     if data and data.role == 'runner' and idx >= total then
         EndRace(data.team)
+    end
+end)
+
+-- Track runner progress for position display
+RegisterNetEvent('od:updateProgress', function(checkpoint, distance)
+    local data = GameState.players[source]
+    if not data or data.role ~= 'runner' then return end
+
+    data.checkpoint = checkpoint
+    data.distance = distance
+
+    -- Calculate positions
+    local runners = {}
+    for pid, p in pairs(GameState.players) do
+        if p.role == 'runner' then
+            table.insert(runners, {
+                team = Config.Teams[p.team].name,
+                checkpoint = p.checkpoint or 1,
+                distance = p.distance or 9999
+            })
+        end
+    end
+
+    -- Sort by checkpoint (desc) then distance (asc)
+    table.sort(runners, function(a, b)
+        if a.checkpoint ~= b.checkpoint then
+            return a.checkpoint > b.checkpoint
+        end
+        return a.distance < b.distance
+    end)
+
+    -- Broadcast to all players in race
+    for pid, _ in pairs(GameState.players) do
+        TriggerClientEvent('od:updatePositions', pid, runners)
     end
 end)
 
