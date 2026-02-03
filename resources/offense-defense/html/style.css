@@ -20,6 +20,8 @@ body { background: transparent; color: white; overflow: hidden; }
 .online-role { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
 .online-role.admin { background: #FFD700; color: #000; }
 .online-role.player { background: #444; color: #fff; }
+.online-role.runner { background: #FFD700; color: #000; }
+.online-role.blocker { background: #555; color: #fff; }
 
 /* Lobby */
 #lobby {
@@ -113,6 +115,53 @@ body { background: transparent; color: white; overflow: hidden; }
 .cp-progress { font-size: 28px; font-weight: 900; }
 .cp-distance { font-size: 14px; opacity: 0.7; margin-top: 4px; }
 
+.hud-controls {
+    background: rgba(0,0,0,0.75);
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-top: 10px;
+    font-size: 11px;
+    opacity: 0.7;
+}
+.hud-controls .key {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 3px;
+    font-weight: 600;
+}
+
+.respawn-progress {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 600;
+    background: rgba(0,0,0,0.8);
+    padding: 20px 40px;
+    border-radius: 10px;
+}
+.respawn-bar {
+    width: 200px;
+    height: 10px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.respawn-fill {
+    height: 100%;
+    background: #FFD700;
+    width: 0%;
+    transition: width 0.1s linear;
+}
+.respawn-text {
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: #FFD700;
+}
+
 /* Race countdown */
 #race-countdown {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -160,3 +209,140 @@ body { background: transparent; color: white; overflow: hidden; }
 @keyframes resultsIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes changeIn { from { transform: scale(1.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 0.8; } }
+
+/* Minigames Browser */
+#minigames-browser {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    border-radius: 10px;
+    padding: 15px 20px;
+    min-width: 500px;
+    z-index: 100;
+}
+.browser-title {
+    font-size: 12px;
+    letter-spacing: 3px;
+    opacity: 0.6;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.browser-list {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+.game-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 12px;
+    transition: all 0.2s;
+    flex: 1;
+    min-width: 150px;
+}
+.game-card:hover:not(.coming-soon) {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.2);
+}
+.game-card.coming-soon {
+    opacity: 0.5;
+}
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.game-name {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+.game-status {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+.game-status.idle { background: #444; color: #aaa; }
+.game-status.lobby { background: #32CD32; color: #000; }
+.game-status.racing { background: #FFD700; color: #000; }
+.game-status.countdown { background: #FF6B00; color: #fff; }
+.game-status.soon { background: #333; color: #666; }
+.game-capacity {
+    font-size: 24px;
+    font-weight: 900;
+    margin: 8px 0;
+}
+.game-progress {
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 4px;
+}
+.progress-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    opacity: 0.6;
+}
+.progress-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #FFD700;
+}
+.game-players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 8px 0;
+}
+.game-player {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+}
+.game-player.green { border-left: 2px solid #32CD32; }
+.game-player.purple { border-left: 2px solid #9400D3; }
+.game-join {
+    display: block;
+    text-align: center;
+    padding: 8px;
+    background: linear-gradient(135deg, #32CD32, #228B22);
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+}
+.game-join:hover:not(.disabled) {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(50,205,50,0.5);
+}
+.game-join .key {
+    background: rgba(0,0,0,0.3);
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-right: 6px;
+}
+.game-join.disabled {
+    background: #444;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.game-join.disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+.game-desc {
+    font-size: 11px;
+    opacity: 0.5;
+    margin-top: 4px;
+}

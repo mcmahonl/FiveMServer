@@ -244,15 +244,6 @@ function StartCountdown()
     GameState.phase = 'countdown'
     GameState.countdown = Config.Settings.lobbyCountdown
 
-    -- Collect wagers into pot
-    local pot = exports['offense-defense']:CollectPot()
-
-    -- Broadcast pot amount to lobby players (use stored wager, not recalculated)
-    for pid, _ in pairs(GameState.players) do
-        local wager = exports['offense-defense']:GetPlayerWager(pid)
-        TriggerClientEvent('od:updatePot', pid, pot, wager)
-    end
-
     CreateThread(function()
         while GameState.countdown > 0 and GameState.phase == 'countdown' do
             for pid, _ in pairs(GameState.players) do
@@ -267,6 +258,15 @@ end
 
 function StartRace()
     GameState.phase = 'racing'
+
+    -- Collect wagers into pot NOW (not during countdown, so players can't leave after paying)
+    local pot = exports['offense-defense']:CollectPot()
+
+    -- Broadcast final pot amount
+    for pid, _ in pairs(GameState.players) do
+        local wager = exports['offense-defense']:GetPlayerWager(pid)
+        TriggerClientEvent('od:updatePot', pid, pot, wager)
+    end
 
     -- Create game history record
     CurrentGameId = exports['offense-defense']:CreateGameRecord(GameState.currentMap)
@@ -429,6 +429,41 @@ RegisterNetEvent('od:saveMap', function(mapData)
     TriggerClientEvent('chat:addMessage', source, { args = { '^2[OD]', 'Map saved: ' .. mapData.name } })
 end)
 
+-- Request online players list (for Tab toggle)
+RegisterNetEvent('od:requestOnlinePlayers', function()
+    BroadcastOnlinePlayers()
+end)
+
+-- Request game players list (for Tab toggle)
+RegisterNetEvent('od:requestGamePlayers', function()
+    local src = source
+    if not GameState.players[src] then return end
+
+    local list = {}
+    for pid, data in pairs(GameState.players) do
+        local points = exports['offense-defense']:GetPlayerPoints(pid)
+        table.insert(list, {
+            name = data.name,
+            role = data.role,
+            team = Config.Teams[data.team].name:lower(),
+            points = points or 0,
+            rank = 0
+        })
+    end
+
+    -- Sort by checkpoint progress (runners) or just alphabetically
+    table.sort(list, function(a, b)
+        return a.name < b.name
+    end)
+
+    -- Assign ranks
+    for i, p in ipairs(list) do
+        p.rank = i
+    end
+
+    TriggerClientEvent('od:updateGamePlayers', src, list)
+end)
+
 -- Announcements
 CreateThread(function()
     Wait(5000)
@@ -439,4 +474,62 @@ CreateThread(function()
             TriggerClientEvent('chat:addMessage', -1, { args = { '^3[MINIGAMES]', 'Offense Defense available! /join od' } })
         end
     end
+end)
+
+-- Get minigames state for browser
+function GetMinigamesState()
+    local playerCount = 0
+    local playerList = {}
+    local checkpointStr = ''
+    
+    for pid, data in pairs(GameState.players) do
+        playerCount = playerCount + 1
+        table.insert(playerList, {
+            name = data.name,
+            team = Config.Teams[data.team].name:lower()
+        })
+        -- Get checkpoint progress for leading runner
+        if data.role == 'runner' and data.checkpoint then
+            local total = LoadedMap and LoadedMap.checkpoints and #LoadedMap.checkpoints or 4
+            if checkpointStr == '' or (data.checkpoint or 0) > 0 then
+                checkpointStr = (data.checkpoint - 1) .. '/' .. total
+            end
+        end
+    end
+    
+    return {
+        od = {
+            status = GameState.phase,
+            playerCount = playerCount,
+            maxPlayers = Config.Settings.maxTeamSize * 2,
+            players = playerList,
+            checkpoint = checkpointStr ~= '' and checkpointStr or nil
+        }
+    }
+end
+
+-- Broadcast minigames state to all online players
+function BroadcastMinigamesState()
+    local state = GetMinigamesState()
+    TriggerClientEvent('od:updateMinigames', -1, state)
+end
+
+-- Periodic minigames state broadcast
+CreateThread(function()
+    Wait(2000)
+    while true do
+        BroadcastMinigamesState()
+        Wait(1000) -- Update every second
+    end
+end)
+
+-- Request minigames state (for when player first loads)
+RegisterNetEvent('od:requestMinigames', function()
+    local state = GetMinigamesState()
+    TriggerClientEvent('od:updateMinigames', source, state)
+end)
+
+-- Join from browser click
+RegisterNetEvent('od:joinFromBrowser', function()
+    JoinLobby(source)
 end)

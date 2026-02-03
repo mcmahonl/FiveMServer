@@ -28,6 +28,12 @@ window.addEventListener('message', (event) => {
         case 'updatePot': updatePot(data.pot, data.wager, data.teamSize || 1); break;
         case 'showResults': showResults(data.data); break;
         case 'hideResults': hideResults(); break;
+        case 'showRespawnProgress': showRespawnProgress(data.progress); break;
+        case 'hideRespawnProgress': hideRespawnProgress(); break;
+        case 'setPlayersTitle': setPlayersTitle(data.title); break;
+        case 'updateMinigames': updateMinigames(data.games); break;
+        case 'showBrowser': showBrowser(); break;
+        case 'hideBrowser': hideBrowser(); break;
     }
 });
 
@@ -37,6 +43,7 @@ function showLobby(data) {
     state.role = data.role;
     state.selectedCar = 1;
     document.getElementById('lobby').classList.remove('hidden');
+    document.getElementById('minigames-browser').classList.add('hidden');
     updateRole();
     updateCarSelection();
 }
@@ -44,6 +51,7 @@ function showLobby(data) {
 function hideLobby() {
     state.mode = null;
     document.getElementById('lobby').classList.add('hidden');
+    document.getElementById('minigames-browser').classList.remove('hidden');
 }
 
 function updateLobby(data) {
@@ -111,6 +119,7 @@ function showRaceCountdown(number, text) {
     const numEl = document.getElementById('countdown-number');
     const textEl = document.getElementById('countdown-text');
     el.classList.remove('hidden');
+    document.getElementById('minigames-browser').classList.add('hidden');
     numEl.textContent = number;
     numEl.className = 'race-countdown-number' + (number === 'GO' ? ' go' : '');
     textEl.textContent = text || '';
@@ -127,12 +136,14 @@ function hideRaceCountdown() {
 function showEditor(data) {
     state.mode = 'editor';
     document.getElementById('editor').classList.remove('hidden');
+    document.getElementById('minigames-browser').classList.add('hidden');
     updateEditor(data);
 }
 
 function hideEditor() {
     state.mode = null;
     document.getElementById('editor').classList.add('hidden');
+    document.getElementById('minigames-browser').classList.remove('hidden');
 }
 
 function updateEditor(data) {
@@ -178,7 +189,6 @@ function showResults(data) {
     const change = document.getElementById('results-change');
     const total = document.getElementById('results-total');
 
-    // Set title
     if (data.won) {
         title.textContent = 'TEAM ' + data.teamName.toUpperCase() + ' WINS!';
         title.className = 'results-title win';
@@ -187,7 +197,6 @@ function showResults(data) {
         title.className = 'results-title lose';
     }
 
-    // Set change with +/- sign
     const changeVal = data.change;
     if (changeVal >= 0) {
         change.textContent = '+' + changeVal.toLocaleString();
@@ -197,39 +206,34 @@ function showResults(data) {
         change.className = 'results-change negative';
     }
 
-    // Set new total
     total.textContent = data.newTotal.toLocaleString() + ' POINTS';
-
     el.classList.remove('hidden');
-
-    // Auto-hide after 7 seconds
     setTimeout(() => hideResults(), 7000);
 }
 
 function hideResults() {
     state.mode = null;
     document.getElementById('results').classList.add('hidden');
-    // Reset pot display
     const potDisplay = document.getElementById('pot-display');
     if (potDisplay) potDisplay.classList.add('hidden');
 }
 
 function showRaceHud() {
     document.getElementById('race-hud').classList.remove('hidden');
+    document.getElementById('minigames-browser').classList.add('hidden');
 }
 
 function hideRaceHud() {
     document.getElementById('race-hud').classList.add('hidden');
+    document.getElementById('minigames-browser').classList.remove('hidden');
 }
 
 function updateRaceHud(data) {
-    // Update checkpoint progress
     const cpProgress = document.getElementById('cp-progress');
     const cpDistance = document.getElementById('cp-distance');
     if (cpProgress) cpProgress.textContent = data.checkpoint + ' / ' + data.totalCheckpoints;
     if (cpDistance) cpDistance.textContent = data.distance + 'm';
 
-    // Update positions
     const pos1 = document.getElementById('pos-1st');
     const pos2 = document.getElementById('pos-2nd');
     if (pos1 && pos2 && data.positions) {
@@ -241,6 +245,90 @@ function updateRaceHud(data) {
         if (second) {
             pos2.innerHTML = '2ND <span class="team-name ' + second.team.toLowerCase() + '">' + second.team.toUpperCase() + '</span>';
         }
+    }
+}
+
+function showRespawnProgress(progress) {
+    const el = document.getElementById('respawn-progress');
+    const fill = document.getElementById('respawn-fill');
+    if (el) el.classList.remove('hidden');
+    if (fill) fill.style.width = progress + '%';
+}
+
+function hideRespawnProgress() {
+    const el = document.getElementById('respawn-progress');
+    const fill = document.getElementById('respawn-fill');
+    if (el) el.classList.add('hidden');
+    if (fill) fill.style.width = '0%';
+}
+
+function setPlayersTitle(title) {
+    const titleEl = document.querySelector('.online-title');
+    if (titleEl) titleEl.textContent = title;
+}
+
+// Minigames Browser
+function updateMinigames(games) {
+    if (!games) return;
+    
+    // Update Offense Defense
+    const od = games.od;
+    if (od) {
+        const statusEl = document.getElementById('od-status');
+        const capacityEl = document.getElementById('od-capacity');
+        const progressEl = document.getElementById('od-progress');
+        const checkpointEl = document.getElementById('od-checkpoint');
+        const playersEl = document.getElementById('od-players');
+        const joinEl = document.getElementById('od-join');
+        
+        // Status
+        statusEl.textContent = od.status.toUpperCase();
+        statusEl.className = 'game-status ' + od.status;
+        
+        // Capacity
+        capacityEl.textContent = od.playerCount + '/' + od.maxPlayers;
+        
+        // Checkpoint progress (only during race)
+        if (od.status === 'racing' && od.checkpoint) {
+            progressEl.classList.remove('hidden');
+            checkpointEl.textContent = od.checkpoint;
+        } else {
+            progressEl.classList.add('hidden');
+        }
+        
+        // Player list
+        playersEl.innerHTML = '';
+        if (od.players && od.players.length > 0) {
+            od.players.forEach(p => {
+                const span = document.createElement('span');
+                span.className = 'game-player ' + (p.team || '');
+                span.textContent = p.name;
+                playersEl.appendChild(span);
+            });
+        }
+        
+        // Join button
+        if (od.status === 'idle' || od.status === 'lobby') {
+            joinEl.classList.remove('disabled');
+            joinEl.innerHTML = '<span class="key">J</span> JOIN';
+        } else {
+            joinEl.classList.add('disabled');
+            joinEl.innerHTML = 'IN PROGRESS';
+        }
+    }
+}
+
+function showBrowser() {
+    document.getElementById('minigames-browser').classList.remove('hidden');
+}
+
+function hideBrowser() {
+    document.getElementById('minigames-browser').classList.add('hidden');
+}
+
+function joinGame(game) {
+    if (game === 'od') {
+        fetch('https://offense-defense/joinGame', { method: 'POST', body: JSON.stringify({ game: 'od' }) });
     }
 }
 

@@ -11,6 +11,45 @@
         <div id="online-players"></div>
     </div>
 
+    <!-- Minigames Browser (visible when not in game) -->
+    <div id="minigames-browser">
+        <div class="browser-title">MINIGAMES</div>
+        <div class="browser-list">
+            <!-- Offense Defense -->
+            <div class="game-card" id="game-od">
+                <div class="game-header">
+                    <span class="game-name">OFFENSE DEFENSE</span>
+                    <span class="game-status" id="od-status">IDLE</span>
+                </div>
+                <div class="game-capacity" id="od-capacity">0/8</div>
+                <div class="game-progress hidden" id="od-progress">
+                    <div class="progress-label">CHECKPOINT</div>
+                    <div class="progress-value" id="od-checkpoint">0/0</div>
+                </div>
+                <div class="game-players" id="od-players"></div>
+                <div class="game-join" id="od-join"><span class="key">J</span> JOIN</div>
+            </div>
+
+            <!-- Running Back -->
+            <div class="game-card coming-soon">
+                <div class="game-header">
+                    <span class="game-name">RUNNING BACK</span>
+                    <span class="game-status soon">COMING SOON</span>
+                </div>
+                <div class="game-desc">Evade tacklers, score touchdowns</div>
+            </div>
+
+            <!-- Sumo -->
+            <div class="game-card coming-soon">
+                <div class="game-header">
+                    <span class="game-name">SUMO</span>
+                    <span class="game-status soon">COMING SOON</span>
+                </div>
+                <div class="game-desc">Push enemies off the platform</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Results overlay (shown after race) -->
     <div id="results" class="hidden">
         <div class="results-content">
@@ -78,6 +117,14 @@
             <div class="cp-label">CHECKPOINT</div>
             <div id="cp-progress" class="cp-progress">0 / 37</div>
             <div id="cp-distance" class="cp-distance">250m</div>
+        </div>
+        <div class="hud-controls">
+            <span class="key">HOLD E</span> Respawn
+            <span class="key">TAB</span> Players
+        </div>
+        <div id="respawn-progress" class="respawn-progress hidden">
+            <div class="respawn-bar"><div class="respawn-fill" id="respawn-fill"></div></div>
+            <div class="respawn-text">RESPAWNING...</div>
         </div>
     </div>
 
