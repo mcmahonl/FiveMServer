@@ -11,6 +11,34 @@ OnlinePlayers = {}  -- [source] = { name, role }
 CurrentGameId = nil -- For game history tracking
 LoadedMap = nil -- Currently loaded map data
 
+-- Get all available maps
+function GetAllMaps()
+    local maps = {}
+    local resourceName = GetCurrentResourceName()
+    -- Check for od1, od2, od3, etc. up to od99
+    for i = 1, 99 do
+        local mapName = 'od' .. i
+        local data = LoadResourceFile(resourceName, 'maps/' .. mapName .. '.json')
+        if data then
+            table.insert(maps, mapName)
+        end
+    end
+    return maps
+end
+
+-- Get next available map number
+function GetNextMapNumber()
+    local maps = GetAllMaps()
+    local highest = 0
+    for _, mapName in ipairs(maps) do
+        local num = tonumber(mapName:match('od(%d+)'))
+        if num and num > highest then
+            highest = num
+        end
+    end
+    return highest + 1
+end
+
 -- Load map from file
 function LoadMap(mapName)
     local data = LoadResourceFile(GetCurrentResourceName(), 'maps/' .. mapName .. '.json')
@@ -23,11 +51,21 @@ function LoadMap(mapName)
     return false
 end
 
--- Load default map on start
+-- Load a random map
+function LoadRandomMap()
+    local maps = GetAllMaps()
+    if #maps > 0 then
+        local randomMap = maps[math.random(#maps)]
+        return LoadMap(randomMap)
+    end
+    return false
+end
+
+-- Load random map on start
 CreateThread(function()
     Wait(100)
-    if not LoadMap(Config.Settings.defaultMap) then
-        print('[OD] No default map found, using hardcoded spawns')
+    if not LoadRandomMap() then
+        print('[OD] No maps found, using hardcoded spawns')
     end
 end)
 
@@ -109,8 +147,10 @@ RegisterCommand('odedit', function(source, args)
         TriggerClientEvent('chat:addMessage', source, { args = { '^1[OD]', 'Admins only!' } })
         return
     end
-    local mapName = args[1] or 'od1'
+    local nextNum = GetNextMapNumber()
+    local mapName = 'od' .. nextNum
     TriggerClientEvent('od:startEditor', source, mapName)
+    TriggerClientEvent('chat:addMessage', source, { args = { '^2[OD]', 'Creating new map: ' .. mapName } })
 end, false)
 
 RegisterCommand('odstart', function(source)
@@ -154,7 +194,14 @@ function JoinLobby(source)
     GameState.players[source] = { team = team, role = role, ready = false, vehicle = 1, name = GetPlayerName(source) }
     table.insert(GameState.teams[team], source)
     
-    if GameState.phase == 'idle' then GameState.phase = 'lobby' end
+    if GameState.phase == 'idle' then
+        GameState.phase = 'lobby'
+        -- Load a random map for this lobby
+        LoadRandomMap()
+        if LoadedMap then
+            TriggerClientEvent('chat:addMessage', -1, { args = { '^3[OD]', 'Map: ' .. LoadedMap.name } })
+        end
+    end
     
     local slotIndex = #GameState.teams[team]
     TriggerClientEvent('od:joinLobby', source, team, role, slotIndex, LoadedMap)
