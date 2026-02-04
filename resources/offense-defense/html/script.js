@@ -1,5 +1,5 @@
-let state = {
 let resultsTimeout = null;
+let state = {
     mode: null,
     team: 1,
     role: 'runner',
