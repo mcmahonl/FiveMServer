@@ -30,8 +30,20 @@ RoadSpawns = {
 
 -- Random cars for free roam spawning
 RandomCars = {
-    'sultan', 'elegy2', 'comet2', 'buffalo', 'kuruma',
-    'zentorno', 'turismor', 'massacro', 'jester', 'banshee'
+    -- Lamborghini
+    'svj63', 'veneno', 'urus', 'lp700r', 'huracanst', 'lambose',
+    -- Ferrari
+    'laferrari', 'fxxk', 'f812', '488', 'mig',
+    -- McLaren
+    'senna', '720s', 'mcst', '675lt', 'gtr96',
+    -- Koenigsegg
+    'agerars', 'regera',
+    -- Bugatti
+    'bolide',
+    -- Porsche
+    'taycan', 'cgt',
+    -- Other hypercars
+    'lykan', 'wmfenyr', 'it18', 'tr22'
 }
 
 -- NUI Callbacks
@@ -101,31 +113,22 @@ function SpawnAtRandomRoad(withCar)
         Local.freeRoamVehicle = nil
     end
 
-    -- Request collision and wait for area to load
-    RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+    -- Find nearest road node to get a safe spawn point
+    local foundRoad, roadPos, roadHeading = GetClosestVehicleNodeWithHeading(spawn.x, spawn.y, spawn.z, 1, 3.0, 0)
     
-    -- Load the area
-    local timeout = 0
-    while not HasCollisionLoadedAroundEntity(ped) and timeout < 50 do
-        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
-        Wait(100)
-        timeout = timeout + 1
+    local finalX, finalY, finalZ, finalHeading
+    if foundRoad then
+        finalX, finalY, finalZ = roadPos.x, roadPos.y, roadPos.z
+        finalHeading = roadHeading
+    else
+        -- Fallback to original coords
+        finalX, finalY, finalZ = spawn.x, spawn.y, spawn.z
+        finalHeading = spawn.w
     end
 
-    -- Teleport player high first to avoid getting stuck
-    SetEntityCoords(ped, spawn.x, spawn.y, spawn.z + 50.0, false, false, false, true)
-    Wait(100)
-
-    -- Find ground Z coordinate
-    local groundZ = spawn.z
-    local foundGround, z = GetGroundZFor_3dCoord(spawn.x, spawn.y, spawn.z + 100.0, false)
-    if foundGround then
-        groundZ = z
-    end
-
-    -- Set final position
-    SetEntityCoords(ped, spawn.x, spawn.y, groundZ + 1.0, false, false, false, true)
-    SetEntityHeading(ped, spawn.w)
+    -- Request collision at the spawn location
+    RequestCollisionAtCoord(finalX, finalY, finalZ)
+    Wait(500)
 
     if withCar then
         local model = RandomCars[math.random(#RandomCars)]
@@ -137,11 +140,20 @@ function SpawnAtRandomRoad(withCar)
             timeout = timeout + 1
         end
         if HasModelLoaded(hash) then
-            Local.freeRoamVehicle = CreateVehicle(hash, spawn.x, spawn.y, groundZ + 0.5, spawn.w, true, false)
-            SetPedIntoVehicle(ped, Local.freeRoamVehicle, -1)
+            -- Create vehicle first, then place on ground
+            Local.freeRoamVehicle = CreateVehicle(hash, finalX, finalY, finalZ + 2.0, finalHeading, true, false)
             SetVehicleOnGroundProperly(Local.freeRoamVehicle)
+            SetEntityHeading(Local.freeRoamVehicle, finalHeading)
+            SetPedIntoVehicle(ped, Local.freeRoamVehicle, -1)
             SetModelAsNoLongerNeeded(hash)
+            
+            -- Extra safety: make sure vehicle is right-side up
+            SetEntityRotation(Local.freeRoamVehicle, 0.0, 0.0, finalHeading, 2, true)
+            PlaceObjectOnGroundProperly(Local.freeRoamVehicle)
         end
+    else
+        SetEntityCoords(ped, finalX, finalY, finalZ + 1.0, false, false, false, true)
+        SetEntityHeading(ped, finalHeading)
     end
 end
 
