@@ -144,7 +144,6 @@ function SpawnAtRandomRoad(withCar)
         end
     end
 end
-end
 
 -- Initial spawn when player joins server
 AddEventHandler('playerSpawned', function()
