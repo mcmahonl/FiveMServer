@@ -46,6 +46,33 @@ RandomCars = {
     'lykan', 'wmfenyr', 'tr22'
 }
 
+-- Manual car name lookup for addon cars
+CarNameLookup = {
+    ['bolide'] = '2020 Bugatti Bolide',
+    ['488'] = 'Ferrari 488 Spider',
+    ['f812'] = '2018 Ferrari 812 Superfast',
+    ['fxxk'] = 'Ferrari FXX-K',
+    ['laferrari'] = '2015 Ferrari LaFerrari',
+    ['mig'] = 'Ferrari Enzo',
+    ['agerars'] = '2017 Koenigsegg Agera RS',
+    ['regera'] = 'Koenigsegg Regera',
+    ['huracanst'] = 'Lamborghini Huracan ST',
+    ['lambose'] = 'Lamborghini Sesto Elemento',
+    ['lp700r'] = 'Lamborghini Aventador LP700',
+    ['svj63'] = 'Lamborghini Aventador SVJ',
+    ['urus'] = 'Lamborghini Urus',
+    ['veneno'] = 'Lamborghini Veneno',
+    ['675lt'] = 'McLaren 675LT',
+    ['720s'] = 'McLaren 720S',
+    ['gtr96'] = 'McLaren F1 GTR',
+    ['mcst'] = 'McLaren Speedtail',
+    ['senna'] = 'McLaren Senna',
+    ['cgt'] = 'Porsche Carrera GT',
+    ['taycan'] = 'Porsche Taycan Turbo S',
+    ['tr22'] = 'Tesla Roadster',
+    ['wmfenyr'] = 'W-Motors Fenyr',
+    ['lykan'] = 'W-Motors Lykan',
+}
 -- Modern car colors for hypercars
 HypercarColors = {
     { name = "White", paint = 1, r = 255, g = 255, b = 255 },
@@ -817,15 +844,11 @@ CreateThread(function()
                 wasInVehicle = true
             end
             
-            -- Get vehicle display name
+            -- Get vehicle display name using lookup table
             local model = GetEntityModel(vehicle)
             local displayName = GetDisplayNameFromVehicleModel(model)
-            local labelName = GetLabelText(displayName)
-            
-            -- If no label found, just use display name
-            if not labelName or labelName == "NULL" then
-                labelName = displayName
-            end
+            local lowerName = displayName:lower()
+            local labelName = CarNameLookup[lowerName] or displayName:upper()
             
             -- Get speed in MPH (game uses m/s, multiply by 2.236936 for mph)
             local speed = GetEntitySpeed(vehicle)
