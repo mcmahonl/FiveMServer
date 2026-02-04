@@ -101,7 +101,30 @@ function SpawnAtRandomRoad(withCar)
         Local.freeRoamVehicle = nil
     end
 
-    SetEntityCoords(ped, spawn.x, spawn.y, spawn.z, false, false, false, true)
+    -- Request collision and wait for area to load
+    RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+    
+    -- Load the area
+    local timeout = 0
+    while not HasCollisionLoadedAroundEntity(ped) and timeout < 50 do
+        RequestCollisionAtCoord(spawn.x, spawn.y, spawn.z)
+        Wait(100)
+        timeout = timeout + 1
+    end
+
+    -- Teleport player high first to avoid getting stuck
+    SetEntityCoords(ped, spawn.x, spawn.y, spawn.z + 50.0, false, false, false, true)
+    Wait(100)
+
+    -- Find ground Z coordinate
+    local groundZ = spawn.z
+    local foundGround, z = GetGroundZFor_3dCoord(spawn.x, spawn.y, spawn.z + 100.0, false)
+    if foundGround then
+        groundZ = z
+    end
+
+    -- Set final position
+    SetEntityCoords(ped, spawn.x, spawn.y, groundZ + 1.0, false, false, false, true)
     SetEntityHeading(ped, spawn.w)
 
     if withCar then
@@ -114,12 +137,13 @@ function SpawnAtRandomRoad(withCar)
             timeout = timeout + 1
         end
         if HasModelLoaded(hash) then
-            Local.freeRoamVehicle = CreateVehicle(hash, spawn.x, spawn.y, spawn.z, spawn.w, true, false)
+            Local.freeRoamVehicle = CreateVehicle(hash, spawn.x, spawn.y, groundZ + 0.5, spawn.w, true, false)
             SetPedIntoVehicle(ped, Local.freeRoamVehicle, -1)
             SetVehicleOnGroundProperly(Local.freeRoamVehicle)
             SetModelAsNoLongerNeeded(hash)
         end
     end
+end
 end
 
 -- Initial spawn when player joins server
