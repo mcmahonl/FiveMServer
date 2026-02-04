@@ -15,9 +15,9 @@ body { background: transparent; color: white; overflow: hidden; }
 .online-title { font-size: 11px; letter-spacing: 2px; opacity: 0.6; margin-bottom: 8px; }
 .online-player { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
 .online-rank { font-size: 11px; font-weight: 700; color: #FFD700; min-width: 18px; }
-.online-name { opacity: 0.9; flex: 1; }
+.online-name { opacity: 0.9; flex: 1; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .online-points { font-size: 11px; color: #4CAF50; font-weight: 600; margin-right: 6px; }
-.online-role { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+.online-role { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; width: 50px; text-align: center; display: inline-block; }
 .online-role.admin { background: #FFD700; color: #000; }
 .online-role.player { background: #444; color: #fff; }
 .online-role.runner { background: #FFD700; color: #000; }
