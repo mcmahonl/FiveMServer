@@ -36,10 +36,16 @@ window.addEventListener('message', (event) => {
         case 'updateMinigames': updateMinigames(data.games); break;
         case 'showBrowser': showBrowser(); break;
         case 'hideBrowser': hideBrowser(); break;
+        case 'showCarHud': showCarHud(); break;
+        case 'hideCarHud': hideCarHud(); break;
+        case 'updateCarHud': updateCarHud(data); break;
     }
 });
 
 function showLobby(data) {
+    // Reset timer display
+    document.getElementById('timer').textContent = '--';
+    document.getElementById('timer-label').textContent = 'WAITING FOR PLAYERS';
     state.mode = 'lobby';
     state.team = data.team;
     state.role = data.role;
@@ -378,4 +384,17 @@ function showFinalCheckpoint() {
         el.classList.remove('show');
         el.classList.add('hidden');
     }, 3000);
+}
+
+function showCarHud() {
+    document.getElementById('car-hud').classList.remove('hidden');
+}
+
+function hideCarHud() {
+    document.getElementById('car-hud').classList.add('hidden');
+}
+
+function updateCarHud(data) {
+    document.getElementById('car-name').textContent = data.name || 'UNKNOWN';
+    document.getElementById('car-speed').textContent = data.speed || 0;
 }

@@ -43,9 +43,44 @@ RandomCars = {
     -- Porsche
     'taycan', 'cgt',
     -- Other hypercars
-    'lykan', 'wmfenyr', 'it18', 'tr22'
+    'lykan', 'wmfenyr', 'tr22'
 }
 
+-- Modern car colors for hypercars
+HypercarColors = {
+    { name = 'Ice White', paint = 3, r = 255, g = 255, b = 255 },           -- Matte white
+    { name = 'Murdered Out', paint = 3, r = 15, g = 15, b = 15 },           -- Matte black
+    { name = 'Matte Forest Green', paint = 3, r = 34, g = 85, b = 51 },     -- Matte forest green
+    { name = 'Midnight Purple', paint = 3, r = 75, g = 0, b = 130 },        -- Matte purple
+    { name = 'Matte Gray', paint = 3, r = 80, g = 80, b = 80 },             -- Matte gray
+    { name = 'Nardo Gray', paint = 3, r = 140, g = 140, b = 140 },          -- Nardo gray
+    { name = 'Racing Red', paint = 1, r = 200, g = 25, b = 25 },            -- Metallic red
+    { name = 'Electric Blue', paint = 1, r = 0, g = 100, b = 255 },         -- Metallic blue
+    { name = 'British Racing Green', paint = 1, r = 0, g = 66, b = 37 },    -- Metallic BRG
+    { name = 'Miami Blue', paint = 1, r = 0, g = 180, b = 225 },            -- Metallic Miami blue
+    { name = 'Lava Orange', paint = 1, r = 255, g = 90, b = 0 },            -- Metallic orange
+    { name = 'Chrome', paint = 4, r = 255, g = 255, b = 255 },              -- Chrome
+}
+
+function ApplyRandomHypercarColor(vehicle)
+    local color = HypercarColors[math.random(#HypercarColors)]
+    
+    -- Set paint type (0=normal, 1=metallic, 2=pearl, 3=matte, 4=metal/chrome)
+    SetVehicleModKit(vehicle, 0)
+    
+    if color.paint == 4 then
+        -- Chrome
+        SetVehicleColours(vehicle, 120, 120) -- Chrome color index
+    else
+        SetVehicleModColor_1(vehicle, color.paint, 0, 0)
+        SetVehicleModColor_2(vehicle, color.paint, 0)
+        SetVehicleCustomPrimaryColour(vehicle, color.r, color.g, color.b)
+        SetVehicleCustomSecondaryColour(vehicle, color.r, color.g, color.b)
+    end
+    
+    -- Black out trim for murdered out look
+    SetVehicleExtraColours(vehicle, 0, 0) -- Pearlescent black, wheel color black
+end
 -- NUI Callbacks
 RegisterNUICallback('ready', function(_, cb) TriggerServerEvent('od:ready') cb('ok') end)
 RegisterNUICallback('leave', function(_, cb) TriggerServerEvent('od:leave') cb('ok') end)
@@ -150,6 +185,8 @@ function SpawnAtRandomRoad(withCar)
             -- Extra safety: make sure vehicle is right-side up
             SetEntityRotation(Local.freeRoamVehicle, 0.0, 0.0, finalHeading, 2, true)
             PlaceObjectOnGroundProperly(Local.freeRoamVehicle)
+            -- Apply random hypercar color
+            ApplyRandomHypercarColor(Local.freeRoamVehicle)
         end
     else
         SetEntityCoords(ped, finalX, finalY, finalZ + 1.0, false, false, false, true)
@@ -184,7 +221,7 @@ end)
 
 RegisterNetEvent('od:lobbyCountdown', function(seconds)
     SendNUIMessage({ type = 'updateTimer', time = seconds, label = 'STARTING' })
-    PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', false)
+    PlaySoundFrontend(-1, 'NAV_UP_DOWN', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
 end)
 
 RegisterNetEvent('od:updatePot', function(pot, wager, teamSize)
@@ -194,9 +231,9 @@ end)
 RegisterNetEvent('od:showResults', function(data)
     SendNUIMessage({ type = 'showResults', data = data })
     if data.won then
-        PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', false)
+        PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
     else
-        PlaySoundFrontend(-1, 'CHECKPOINT_MISSED', 'HUD_MINI_GAME_SOUNDSET', false)
+        PlaySoundFrontend(-1, 'BACK', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
     end
 end)
 
@@ -226,11 +263,11 @@ RegisterNetEvent('od:startRace', function(team, slotIndex, vehicleModel, role, m
     CreateThread(function()
         for i = Config.Settings.raceCountdown, 1, -1 do
             SendNUIMessage({ type = 'showRaceCountdown', number = tostring(i), text = '' })
-            PlaySoundFrontend(-1, 'TIMER_STOP', 'HUD_MINI_GAME_SOUNDSET', false)
+            PlaySoundFrontend(-1, 'NAV_UP_DOWN', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
             Wait(1000)
         end
         SendNUIMessage({ type = 'showRaceCountdown', number = 'GO', text = '' })
-        PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', false)
+        PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
         FreezeEntityPosition(Local.raceVehicle, false)
         GiveAllWeapons()
         Wait(1000)
@@ -442,7 +479,7 @@ CreateThread(function()
             -- Runner checkpoint detection
             if Local.role == 'runner' and cp then
                 if dist < Config.Settings.checkpointRadius then
-                    PlaySoundFrontend(-1, 'CHECKPOINT_NORMAL', 'HUD_MINI_GAME_SOUNDSET', false)
+                    PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
                     TriggerServerEvent('od:checkpointReached', Local.currentCheckpoint, #checkpoints)
                     -- Store this checkpoint position for respawn
                     Local.lastCheckpointPos = cp
@@ -534,7 +571,7 @@ CreateThread(function()
                         SetVehicleFixed(Local.raceVehicle)
                         SetVehicleDeformationFixed(Local.raceVehicle)
                     end
-                    PlaySoundFrontend(-1, 'CHECKPOINT_NORMAL', 'HUD_MINI_GAME_SOUNDSET', false)
+                    PlaySoundFrontend(-1, 'SELECT', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
                     Wait(500) -- Brief cooldown
                 end
             else
@@ -771,3 +808,57 @@ RegisterCommand('giveweapons', function()
     GiveAllWeapons()
     print('[OD] Done giving weapons')
 end, false)
+
+-- Car HUD - shows vehicle name and speed
+CreateThread(function()
+    local wasInVehicle = false
+    while true do
+        Wait(100) -- Update 10 times per second
+        local ped = PlayerPedId()
+        local vehicle = GetVehiclePedIsIn(ped, false)
+        
+        if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == ped then
+            -- Player is driving a vehicle
+            if not wasInVehicle then
+                SendNUIMessage({ type = 'showCarHud' })
+                wasInVehicle = true
+            end
+            
+            -- Get vehicle display name
+            local model = GetEntityModel(vehicle)
+            local displayName = GetDisplayNameFromVehicleModel(model)
+            local makeName = GetMakeNameFromVehicleModel(model)
+            local labelName = GetLabelText(displayName)
+            
+            -- For addon cars, use the text entry directly
+            if labelName == "NULL" or labelName == displayName then
+                labelName = GetLabelText(displayName:lower())
+            end
+            if labelName == "NULL" or labelName == displayName:lower() then
+                labelName = displayName:upper()
+            end
+            
+            -- Add make name if available
+            local makeLabelName = GetLabelText(makeName)
+            if makeLabelName ~= "NULL" and makeLabelName ~= "" then
+                labelName = makeLabelName .. " " .. labelName
+            end
+            
+            -- Get speed in MPH (game uses m/s, multiply by 2.236936 for mph)
+            local speed = GetEntitySpeed(vehicle)
+            local speedMph = math.floor(speed * 2.236936)
+            
+            SendNUIMessage({
+                type = 'updateCarHud',
+                name = labelName,
+                speed = speedMph
+            })
+        else
+            -- Player is not in a vehicle
+            if wasInVehicle then
+                SendNUIMessage({ type = 'hideCarHud' })
+                wasInVehicle = false
+            end
+        end
+    end
+end)
