@@ -48,18 +48,11 @@ RandomCars = {
 
 -- Modern car colors for hypercars
 HypercarColors = {
-    { name = 'Ice White', paint = 3, r = 255, g = 255, b = 255 },           -- Matte white
-    { name = 'Murdered Out', paint = 3, r = 15, g = 15, b = 15 },           -- Matte black
-    { name = 'Matte Forest Green', paint = 3, r = 34, g = 85, b = 51 },     -- Matte forest green
-    { name = 'Midnight Purple', paint = 3, r = 75, g = 0, b = 130 },        -- Matte purple
-    { name = 'Matte Gray', paint = 3, r = 80, g = 80, b = 80 },             -- Matte gray
-    { name = 'Nardo Gray', paint = 3, r = 140, g = 140, b = 140 },          -- Nardo gray
-    { name = 'Racing Red', paint = 1, r = 200, g = 25, b = 25 },            -- Metallic red
-    { name = 'Electric Blue', paint = 1, r = 0, g = 100, b = 255 },         -- Metallic blue
-    { name = 'British Racing Green', paint = 1, r = 0, g = 66, b = 37 },    -- Metallic BRG
-    { name = 'Miami Blue', paint = 1, r = 0, g = 180, b = 225 },            -- Metallic Miami blue
-    { name = 'Lava Orange', paint = 1, r = 255, g = 90, b = 0 },            -- Metallic orange
-    { name = 'Chrome', paint = 4, r = 255, g = 255, b = 255 },              -- Chrome
+    { name = "White", paint = 1, r = 255, g = 255, b = 255 },
+    { name = "Black", paint = 1, r = 10, g = 10, b = 10 },
+    { name = "Matte Black", paint = 3, r = 15, g = 15, b = 15 },
+    { name = "Matte Forest Green", paint = 3, r = 34, g = 85, b = 51 },
+    { name = "Matte Desert Sand", paint = 3, r = 190, g = 165, b = 135 },
 }
 
 function ApplyRandomHypercarColor(vehicle)
@@ -827,21 +820,11 @@ CreateThread(function()
             -- Get vehicle display name
             local model = GetEntityModel(vehicle)
             local displayName = GetDisplayNameFromVehicleModel(model)
-            local makeName = GetMakeNameFromVehicleModel(model)
             local labelName = GetLabelText(displayName)
             
-            -- For addon cars, use the text entry directly
-            if labelName == "NULL" or labelName == displayName then
-                labelName = GetLabelText(displayName:lower())
-            end
-            if labelName == "NULL" or labelName == displayName:lower() then
-                labelName = displayName:upper()
-            end
-            
-            -- Add make name if available
-            local makeLabelName = GetLabelText(makeName)
-            if makeLabelName ~= "NULL" and makeLabelName ~= "" then
-                labelName = makeLabelName .. " " .. labelName
+            -- If no label found, just use display name
+            if not labelName or labelName == "NULL" then
+                labelName = displayName
             end
             
             -- Get speed in MPH (game uses m/s, multiply by 2.236936 for mph)

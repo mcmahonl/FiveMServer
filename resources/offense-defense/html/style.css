@@ -386,8 +386,9 @@ body { background: transparent; color: white; overflow: hidden; }
 #car-hud {
     position: fixed;
     bottom: 40px;
-    right: 40px;
-    text-align: right;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
     font-family: 'Segoe UI', Arial, sans-serif;
     z-index: 100;
 }
