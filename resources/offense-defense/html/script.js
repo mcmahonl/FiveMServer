@@ -1,4 +1,5 @@
 let state = {
+let resultsTimeout = null;
     mode: null,
     team: 1,
     role: 'runner',
@@ -18,6 +19,7 @@ window.addEventListener('message', (event) => {
         case 'updateTimer': updateTimer(data.time, data.label); break;
         case 'showRaceCountdown': showRaceCountdown(data.number, data.text); break;
         case 'hideRaceCountdown': hideRaceCountdown(); break;
+        case 'showFinalCheckpoint': showFinalCheckpoint(); break;
         case 'showRaceHud': showRaceHud(); break;
         case 'hideRaceHud': hideRaceHud(); break;
         case 'updateRaceHud': updateRaceHud(data); break;
@@ -183,6 +185,8 @@ function updatePot(pot, wager, teamSize) {
 }
 
 function showResults(data) {
+    console.log("[OD] showResults:", JSON.stringify(data));
+    if (resultsTimeout) { clearTimeout(resultsTimeout); resultsTimeout = null; }
     state.mode = 'results';
     const el = document.getElementById('results');
     const title = document.getElementById('results-title');
@@ -208,7 +212,7 @@ function showResults(data) {
 
     total.textContent = data.newTotal.toLocaleString() + ' POINTS';
     el.classList.remove('hidden');
-    setTimeout(() => hideResults(), 7000);
+    resultsTimeout = setTimeout(() => hideResults(), 7000);
 }
 
 function hideResults() {
@@ -355,3 +359,23 @@ document.addEventListener('keydown', (e) => {
         fetch('https://offense-defense/editorExit', { method: 'POST' });
     }
 });
+
+function showFinalCheckpoint() {
+    // Create and show the final checkpoint notification
+    let el = document.getElementById('final-checkpoint');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'final-checkpoint';
+        el.className = 'final-checkpoint';
+        el.innerHTML = '<div class="final-checkpoint-text">🏁 FINAL CHECKPOINT 🏁</div>';
+        document.body.appendChild(el);
+    }
+    el.classList.remove('hidden');
+    el.classList.add('show');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        el.classList.remove('show');
+        el.classList.add('hidden');
+    }, 3000);
+}

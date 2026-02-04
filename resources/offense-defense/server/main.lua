@@ -580,3 +580,67 @@ end)
 RegisterNetEvent('od:joinFromBrowser', function()
     JoinLobby(source)
 end)
+
+-- Broadcast player blip data during race
+CreateThread(function()
+    while true do
+        Wait(500) -- Update every 500ms
+        if GameState.phase == 'racing' then
+            local blipData = {}
+            for pid, data in pairs(GameState.players) do
+                table.insert(blipData, {
+                    serverId = pid,
+                    team = data.team,
+                    role = data.role
+                })
+            end
+            -- Send to all players in the race
+            for pid, _ in pairs(GameState.players) do
+                TriggerClientEvent('od:updatePlayerBlips', pid, blipData)
+            end
+        end
+    end
+end)
+
+-- Clear blips when race ends (add to EndRace cleanup)
+local function ClearBlipsForAll()
+    for pid, _ in pairs(GameState.players) do
+        TriggerClientEvent('od:clearBlips', pid)
+    end
+end
+
+-- Teleport to player command
+RegisterCommand('tp', function(source, args)
+    if #args < 1 then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1[TP]', 'Usage: /tp <player name>' } })
+        return
+    end
+    
+    local targetName = table.concat(args, ' ')
+    local targetPlayer = nil
+    
+    -- Find player by name (case insensitive partial match)
+    for _, pid in ipairs(GetPlayers()) do
+        local name = GetPlayerName(tonumber(pid))
+        if name and name:lower():find(targetName:lower(), 1, true) then
+            targetPlayer = tonumber(pid)
+            break
+        end
+    end
+    
+    if not targetPlayer then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1[TP]', 'Player not found: ' .. targetName } })
+        return
+    end
+    
+    if targetPlayer == source then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1[TP]', 'Cannot teleport to yourself!' } })
+        return
+    end
+    
+    local targetPed = GetPlayerPed(targetPlayer)
+    local coords = GetEntityCoords(targetPed)
+    
+    TriggerClientEvent('od:teleportTo', source, coords.x, coords.y, coords.z)
+    TriggerClientEvent('chat:addMessage', source, { args = { '^2[TP]', 'Teleported to ' .. GetPlayerName(targetPlayer) } })
+end, false)

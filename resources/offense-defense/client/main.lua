@@ -70,6 +70,7 @@ RegisterNetEvent('od:joinLobby', function(team, role, slotIndex, mapData)
     
     SetNuiFocus(true, true)
     SendNUIMessage({ type = 'showLobby', team = team, role = role })
+    GiveAllWeapons()
 end)
 
 RegisterNetEvent('od:leaveLobby', function()
@@ -139,6 +140,7 @@ RegisterNetEvent('od:updatePlayer', function(team, role, slotIndex)
     SetEntityHeading(ped, spawn.w)
     SpawnPreviewVehicle(role, team, spawn)
     SendNUIMessage({ type = 'showLobby', team = team, role = role })
+    GiveAllWeapons()
 end)
 
 RegisterNetEvent('od:updateLobby', function(green, purple)
@@ -195,6 +197,7 @@ RegisterNetEvent('od:startRace', function(team, slotIndex, vehicleModel, role, m
         SendNUIMessage({ type = 'showRaceCountdown', number = 'GO', text = '' })
         PlaySoundFrontend(-1, 'CHECKPOINT_PERFECT', 'HUD_MINI_GAME_SOUNDSET', false)
         FreezeEntityPosition(Local.raceVehicle, false)
+        GiveAllWeapons()
         Wait(1000)
         SendNUIMessage({ type = 'hideRaceCountdown' })
         SendNUIMessage({ type = 'showRaceHud' })
@@ -203,6 +206,7 @@ end)
 
 RegisterNetEvent('od:endRace', function()
     Local.inRace = false
+    ClearAllPlayerBlips()
     Local.lastCheckpointPos = nil
     Local.showingGamePlayers = false
     DeleteRaceVehicle()
@@ -408,6 +412,10 @@ CreateThread(function()
                     -- Store this checkpoint position for respawn
                     Local.lastCheckpointPos = cp
                     Local.currentCheckpoint = Local.currentCheckpoint + 1
+                    -- Show final checkpoint notification if next is last
+                    if Local.currentCheckpoint == #checkpoints then
+                        SendNUIMessage({ type = 'showFinalCheckpoint' })
+                    end
                 end
                 -- Send progress to server for position tracking
                 TriggerServerEvent('od:updateProgress', Local.currentCheckpoint, dist)
@@ -425,9 +433,23 @@ CreateThread(function()
             local cp = checkpoints[Local.currentCheckpoint]
             if cp then
                 local color = Config.Teams[Local.team].color
-                DrawMarker(1, cp.x, cp.y, cp.z - 1.0, 0, 0, 0, 0, 0, 0,
-                    Config.Settings.checkpointRadius * 2, Config.Settings.checkpointRadius * 2, 3.0,
-                    color.r, color.g, color.b, 150, false, false, 2, false, nil, nil, false)
+                local isLastCheckpoint = Local.currentCheckpoint == #checkpoints
+                
+                if isLastCheckpoint then
+                    -- Finish line - checkered flag marker (type 4)
+                    DrawMarker(4, cp.x, cp.y, cp.z + 2.0, 0, 0, 0, 0, 0, 0,
+                        2.0, 2.0, 2.0,
+                        255, 255, 255, 200, true, false, 2, true, nil, nil, false)
+                    -- Also draw a gold cylinder underneath
+                    DrawMarker(1, cp.x, cp.y, cp.z - 1.0, 0, 0, 0, 0, 0, 0,
+                        Config.Settings.checkpointRadius * 2, Config.Settings.checkpointRadius * 2, 3.0,
+                        255, 215, 0, 180, false, false, 2, false, nil, nil, false)
+                else
+                    -- Regular checkpoint
+                    DrawMarker(1, cp.x, cp.y, cp.z - 1.0, 0, 0, 0, 0, 0, 0,
+                        Config.Settings.checkpointRadius * 2, Config.Settings.checkpointRadius * 2, 3.0,
+                        color.r, color.g, color.b, 150, false, false, 2, false, nil, nil, false)
+                end
             end
         end
     end
@@ -557,11 +579,11 @@ end, false)
 RegisterCommand('-joinminigame', function() end, false)
 RegisterKeyMapping('+joinminigame', 'Join Minigame', 'keyboard', 'j')
 
--- Disable traffic and peds near player during lobby/race
+-- Disable traffic and peds near player during lobby only
 CreateThread(function()
     while true do
         Wait(500)
-        if Local.inLobby or Local.inRace then
+        if Local.inLobby then
             local pos = GetEntityCoords(PlayerPedId())
             -- Clear area of vehicles and peds
             ClearAreaOfVehicles(pos.x, pos.y, pos.z, 100.0, false, false, false, false, false)
@@ -575,3 +597,142 @@ CreateThread(function()
         end
     end
 end)
+
+-- Player blips for minimap
+PlayerBlips = {}
+
+-- Blip sprites: Runner = race flag, Blocker = shield
+local BLIP_SPRITE_RUNNER = 309  -- Race finish flag
+local BLIP_SPRITE_BLOCKER = 304 -- Shield/helmet
+
+-- Create or update a player blip
+function UpdatePlayerBlip(playerId, team, role)
+    local ped = GetPlayerPed(playerId)
+    if not DoesEntityExist(ped) then return end
+    
+    -- Remove existing blip for this player
+    if PlayerBlips[playerId] then
+        RemoveBlip(PlayerBlips[playerId])
+        PlayerBlips[playerId] = nil
+    end
+    
+    -- Don't create blip for local player
+    if playerId == PlayerId() then return end
+    
+    local blip = AddBlipForEntity(ped)
+    SetBlipSprite(blip, role == 'runner' and BLIP_SPRITE_RUNNER or BLIP_SPRITE_BLOCKER)
+    SetBlipColour(blip, Config.Teams[team].blipColor)
+    SetBlipScale(blip, role == 'runner' and 1.0 or 0.8)
+    SetBlipAsShortRange(blip, false)
+    
+    -- Show on minimap
+    SetBlipDisplay(blip, 2)
+    
+    PlayerBlips[playerId] = blip
+end
+
+-- Remove all player blips
+function ClearAllPlayerBlips()
+    for playerId, blip in pairs(PlayerBlips) do
+        if DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+    end
+    PlayerBlips = {}
+end
+
+-- Receive player data from server and update blips
+RegisterNetEvent('od:updatePlayerBlips', function(players)
+    if not Local.inRace then
+        ClearAllPlayerBlips()
+        return
+    end
+    
+    -- Track which players we've seen this update
+    local seenPlayers = {}
+    
+    for _, data in ipairs(players) do
+        local playerId = GetPlayerFromServerId(data.serverId)
+        if playerId ~= -1 then
+            UpdatePlayerBlip(playerId, data.team, data.role)
+            seenPlayers[playerId] = true
+        end
+    end
+    
+    -- Remove blips for players no longer in the list
+    for playerId, blip in pairs(PlayerBlips) do
+        if not seenPlayers[playerId] then
+            if DoesBlipExist(blip) then
+                RemoveBlip(blip)
+            end
+            PlayerBlips[playerId] = nil
+        end
+    end
+end)
+
+-- Clear blips when race ends (hook into existing endRace)
+
+-- Give all weapons to player
+function GiveAllWeapons()
+    local ped = PlayerPedId()
+    local weapons = {
+        -- Pistols
+        'WEAPON_PISTOL', 'WEAPON_PISTOL_MK2', 'WEAPON_COMBATPISTOL', 'WEAPON_APPISTOL',
+        'WEAPON_STUNGUN', 'WEAPON_PISTOL50', 'WEAPON_SNSPISTOL', 'WEAPON_HEAVYPISTOL',
+        'WEAPON_VINTAGEPISTOL', 'WEAPON_FLAREGUN', 'WEAPON_MARKSMANPISTOL',
+        'WEAPON_REVOLVER', 'WEAPON_REVOLVER_MK2', 'WEAPON_DOUBLEACTION', 'WEAPON_CERAMICPISTOL',
+        -- SMGs
+        'WEAPON_MICROSMG', 'WEAPON_SMG', 'WEAPON_SMG_MK2', 'WEAPON_ASSAULTSMG',
+        'WEAPON_COMBATPDW', 'WEAPON_MACHINEPISTOL', 'WEAPON_MINISMG', 'WEAPON_RAYCARBINE',
+        -- Shotguns
+        'WEAPON_PUMPSHOTGUN', 'WEAPON_PUMPSHOTGUN_MK2', 'WEAPON_SAWNOFFSHOTGUN',
+        'WEAPON_ASSAULTSHOTGUN', 'WEAPON_BULLPUPSHOTGUN', 'WEAPON_MUSKET',
+        'WEAPON_HEAVYSHOTGUN', 'WEAPON_DBSHOTGUN', 'WEAPON_AUTOSHOTGUN', 'WEAPON_COMBATSHOTGUN',
+        -- Assault Rifles
+        'WEAPON_ASSAULTRIFLE', 'WEAPON_ASSAULTRIFLE_MK2', 'WEAPON_CARBINERIFLE',
+        'WEAPON_CARBINERIFLE_MK2', 'WEAPON_ADVANCEDRIFLE', 'WEAPON_SPECIALCARBINE',
+        'WEAPON_SPECIALCARBINE_MK2', 'WEAPON_BULLPUPRIFLE', 'WEAPON_BULLPUPRIFLE_MK2',
+        'WEAPON_COMPACTRIFLE', 'WEAPON_MILITARYRIFLE', 'WEAPON_TACTICALRIFLE',
+        -- Machine Guns
+        'WEAPON_MG', 'WEAPON_COMBATMG', 'WEAPON_COMBATMG_MK2', 'WEAPON_GUSENBERG',
+        -- Sniper Rifles
+        'WEAPON_SNIPERRIFLE', 'WEAPON_HEAVYSNIPER', 'WEAPON_HEAVYSNIPER_MK2',
+        'WEAPON_MARKSMANRIFLE', 'WEAPON_MARKSMANRIFLE_MK2',
+        -- Heavy Weapons
+        'WEAPON_RPG', 'WEAPON_GRENADELAUNCHER', 'WEAPON_MINIGUN', 'WEAPON_FIREWORK',
+        'WEAPON_RAILGUN', 'WEAPON_HOMINGLAUNCHER', 'WEAPON_COMPACTLAUNCHER', 'WEAPON_RAYMINIGUN',
+        -- Throwables
+        'WEAPON_GRENADE', 'WEAPON_BZGAS', 'WEAPON_SMOKEGRENADE', 'WEAPON_FLARE',
+        'WEAPON_MOLOTOV', 'WEAPON_STICKYBOMB', 'WEAPON_PROXMINE', 'WEAPON_SNOWBALL',
+        'WEAPON_PIPEBOMB', 'WEAPON_BALL',
+        -- Melee
+        'WEAPON_KNIFE', 'WEAPON_NIGHTSTICK', 'WEAPON_HAMMER', 'WEAPON_BAT',
+        'WEAPON_GOLFCLUB', 'WEAPON_CROWBAR', 'WEAPON_BOTTLE', 'WEAPON_SWITCHBLADE',
+        'WEAPON_DAGGER', 'WEAPON_HATCHET', 'WEAPON_MACHETE', 'WEAPON_FLASHLIGHT',
+        'WEAPON_KNUCKLE', 'WEAPON_POOLCUE', 'WEAPON_WRENCH', 'WEAPON_BATTLEAXE', 'WEAPON_STONE_HATCHET',
+    }
+    
+    for _, weapon in ipairs(weapons) do
+        local hash = GetHashKey(weapon)
+        GiveWeaponToPed(ped, hash, 9999, false, false)
+    end
+end
+
+-- Teleport to player event
+RegisterNetEvent('od:teleportTo', function(x, y, z)
+    local ped = PlayerPedId()
+    local vehicle = GetVehiclePedIsIn(ped, false)
+    if vehicle ~= 0 then
+        SetEntityCoords(vehicle, x, y, z + 1.0, false, false, false, true)
+        SetVehicleOnGroundProperly(vehicle)
+    else
+        SetEntityCoords(ped, x, y, z + 1.0, false, false, false, true)
+    end
+end)
+
+-- Debug command to give weapons
+RegisterCommand('giveweapons', function()
+    print('[OD] Giving all weapons...')
+    GiveAllWeapons()
+    print('[OD] Done giving weapons')
+end, false)
