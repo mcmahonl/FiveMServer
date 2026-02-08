@@ -12,8 +12,8 @@
     </div>
 
     <!-- Minigames Browser (visible when not in game) -->
-    <div id="minigames-browser">
-        <div class="browser-title">MINIGAMES</div>
+    <div id="minigames-browser" class="browser-collapsed">
+        <div class="browser-title">MINIGAMES <span class="browser-toggle-hint">[M]</span></div>
         <div class="browser-list">
             <!-- Offense Defense -->
             <div class="game-card" id="game-od">
@@ -31,21 +31,33 @@
             </div>
 
             <!-- Running Back -->
-            <div class="game-card coming-soon">
+            <div class="game-card" id="game-rb">
                 <div class="game-header">
                     <span class="game-name">RUNNING BACK</span>
-                    <span class="game-status soon">COMING SOON</span>
+                    <span class="game-status" id="rb-status">IDLE</span>
                 </div>
-                <div class="game-desc">Evade tacklers, score touchdowns</div>
+                <div class="game-capacity" id="rb-capacity">0/8</div>
+                <div class="game-progress hidden" id="rb-progress">
+                    <div class="progress-label">YARD LINE</div>
+                    <div class="progress-value" id="rb-checkpoint">0/0</div>
+                </div>
+                <div class="game-players" id="rb-players"></div>
+                <div class="game-join" id="rb-join"><span class="key">K</span> JOIN</div>
             </div>
 
             <!-- Sumo -->
-            <div class="game-card coming-soon">
+            <div class="game-card" id="game-sumo">
                 <div class="game-header">
                     <span class="game-name">SUMO</span>
-                    <span class="game-status soon">COMING SOON</span>
+                    <span class="game-status" id="sumo-status">IDLE</span>
                 </div>
-                <div class="game-desc">Push enemies off the platform</div>
+                <div class="game-capacity" id="sumo-capacity">0/8</div>
+                <div class="game-progress hidden" id="sumo-progress">
+                    <div class="progress-label">SCORE</div>
+                    <div class="progress-value" id="sumo-checkpoint">0/0</div>
+                </div>
+                <div class="game-players" id="sumo-players"></div>
+                <div class="game-join" id="sumo-join"><span class="key">L</span> JOIN</div>
             </div>
         </div>
     </div>
@@ -108,12 +120,17 @@
     
     <!-- Race HUD (during race) -->
     <div id="race-hud" class="hidden">
+        <div id="round-score" class="round-score hidden">
+            <span id="score-green" class="score-team green">0</span>
+            <span class="score-dash">-</span>
+            <span id="score-purple" class="score-team purple">0</span>
+        </div>
         <div class="hud-positions">
             <div id="pos-1st" class="hud-position first">1ST <span class="team-name">GREEN</span></div>
             <div id="pos-2nd" class="hud-position second">2ND <span class="team-name">PURPLE</span></div>
         </div>
         <div class="hud-checkpoint">
-            <div class="cp-label">CHECKPOINT</div>
+            <div class="cp-label" id="cp-label">CHECKPOINT</div>
             <div id="cp-progress" class="cp-progress">0 / 37</div>
             <div id="cp-distance" class="cp-distance">250m</div>
         </div>
@@ -136,14 +153,14 @@
     <!-- Editor UI -->
     <div id="editor" class="hidden">
         <div class="editor-panel">
-            <div class="editor-title">RACE EDITOR</div>
-            <div class="editor-info">
+            <div class="editor-title" id="editor-title">RACE EDITOR</div>
+            <div class="editor-info" id="editor-info">
                 <div>Map: <span id="editor-map">untitled</span></div>
                 <div>Checkpoints: <span id="editor-cp-count">0</span></div>
                 <div>Lobby set: <span id="editor-lobby">NO</span></div>
                 <div>Start grid: <span id="editor-grid">NO</span></div>
             </div>
-            <div class="editor-controls">
+            <div class="editor-controls" id="editor-controls">
                 <div><span class="key">X</span> Add Checkpoint</div>
                 <div><span class="key">E</span> Remove Last</div>
                 <div><span class="key">H</span> Set Lobby Here</div>
@@ -153,13 +170,21 @@
             </div>
         </div>
     </div>
+
+    <!-- Round Result overlay (between RB rounds) -->
+    <div id="round-result" class="hidden">
+        <div class="round-result-content">
+            <div id="round-result-title" class="round-result-title">TEAM GREEN SCORES!</div>
+            <div id="round-result-score" class="round-result-score">0 - 0</div>
+        </div>
+    </div>
     
+    <!-- Car Info HUD -->
+    <div id="car-hud" class="hidden">
+        <div class="car-name" id="car-name">LOADING...</div>
+        <div class="car-speed"><span id="car-speed">0</span> <span class="speed-unit">MPH</span></div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
-
-    <!-- Car Info HUD -->
-    <div id=car-hud class=hidden>
-        <div class=car-name id=car-name>LOADING...</div>
-        <div class=car-speed><span id=car-speed>0</span> <span class=speed-unit>MPH</span></div>
-    </div>

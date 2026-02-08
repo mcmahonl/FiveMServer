@@ -30,5 +30,7 @@ server_scripts {
 
 client_scripts {
     'client/main.lua',
-    'client/editor.lua'
+    'client/editor.lua',
+    'client/running-back.lua',
+    'client/sumo.lua'
 }

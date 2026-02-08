@@ -137,8 +137,12 @@ RegisterCommand('join', function(source, args)
     local game = args[1]
     if game == 'od' then
         JoinLobby(source)
+    elseif game == 'rb' then
+        RBJoinLobby(source)
+    elseif game == 'sumo' then
+        SumoJoinLobby(source)
     else
-        TriggerClientEvent('chat:addMessage', source, { args = { '^1[SERVER]', 'Try: /join od' } })
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1[SERVER]', 'Try: /join od  or  /join rb  or  /join sumo' } })
     end
 end, false)
 
@@ -167,6 +171,14 @@ end, false)
 
 -- Lobby
 function JoinLobby(source)
+    if RBGameState and RBGameState.players[source] then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1[OD]', 'Leave Running Back first!' } })
+        return
+    end
+    if SumoGameState and SumoGameState.players[source] then
+        TriggerClientEvent('chat:addMessage', source, { args = { '^1[OD]', 'Leave Sumo first!' } })
+        return
+    end
     if GameState.phase == 'racing' then
         TriggerClientEvent('chat:addMessage', source, { args = { '^1[OD]', 'Race in progress!' } })
         return
@@ -514,11 +526,11 @@ end)
 -- Announcements
 CreateThread(function()
     Wait(5000)
-    TriggerClientEvent('chat:addMessage', -1, { args = { '^3[MINIGAMES]', 'Offense Defense available! /join od' } })
+    TriggerClientEvent('chat:addMessage', -1, { args = { '^3[MINIGAMES]', 'Offense Defense: /join od  |  Running Back: /join rb  |  Sumo: /join sumo' } })
     while true do
         Wait(Config.Settings.announcementInterval)
         if GameState.phase == 'idle' then
-            TriggerClientEvent('chat:addMessage', -1, { args = { '^3[MINIGAMES]', 'Offense Defense available! /join od' } })
+            TriggerClientEvent('chat:addMessage', -1, { args = { '^3[MINIGAMES]', 'Offense Defense: /join od  |  Running Back: /join rb  |  Sumo: /join sumo' } })
         end
     end
 end)
@@ -544,7 +556,7 @@ function GetMinigamesState()
         end
     end
     
-    return {
+    local state = {
         od = {
             status = GameState.phase,
             playerCount = playerCount,
@@ -553,6 +565,18 @@ function GetMinigamesState()
             checkpoint = checkpointStr ~= '' and checkpointStr or nil
         }
     }
+
+    -- Include Running Back state if available
+    if GetRBMinigamesState then
+        state.rb = GetRBMinigamesState()
+    end
+
+    -- Include Sumo state if available
+    if GetSumoMinigamesState then
+        state.sumo = GetSumoMinigamesState()
+    end
+
+    return state
 end
 
 -- Broadcast minigames state to all online players

@@ -217,7 +217,7 @@ end
 -- Initial spawn when player joins server
 AddEventHandler('playerSpawned', function()
     Wait(1000)
-    if not Local.inLobby and not Local.inRace and not Local.inEditor then
+    if not Local.inLobby and not Local.inEditor then
         SpawnAtRandomRoad(true)
     end
 end)
@@ -647,6 +647,10 @@ end)
 RegisterNUICallback('joinGame', function(data, cb)
     if data.game == 'od' then
         TriggerServerEvent('od:joinFromBrowser')
+    elseif data.game == 'rb' then
+        TriggerServerEvent('rb:joinFromBrowser')
+    elseif data.game == 'sumo' then
+        TriggerServerEvent('sumo:joinFromBrowser')
     end
     cb('ok')
 end)
@@ -662,14 +666,41 @@ CreateThread(function()
     TriggerServerEvent('od:requestMinigames')
 end)
 
--- Register J key for joining minigame
-RegisterCommand('+joinminigame', function()
-    if not Local.inLobby and not Local.inRace and not Local.inEditor then
+-- Register J key for joining OD
+RegisterCommand('+joinod', function()
+    if not Local.inLobby and not Local.inEditor and not RBLocal.inLobby and not RBLocal.inRace and not SumoLocal.inLobby and not SumoLocal.inRace then
         TriggerServerEvent('od:joinFromBrowser')
     end
 end, false)
-RegisterCommand('-joinminigame', function() end, false)
-RegisterKeyMapping('+joinminigame', 'Join Minigame', 'keyboard', 'j')
+RegisterCommand('-joinod', function() end, false)
+RegisterKeyMapping('+joinod', 'Join Offense Defense', 'keyboard', 'j')
+
+-- Register M key for toggling browser
+RegisterCommand('+togglebrowser', function()
+    if not Local.inLobby and not Local.inRace and not Local.inEditor and not RBLocal.inLobby and not RBLocal.inRace and not SumoLocal.inLobby and not SumoLocal.inRace then
+        SendNUIMessage({ type = 'toggleBrowser' })
+    end
+end, false)
+RegisterCommand('-togglebrowser', function() end, false)
+RegisterKeyMapping('+togglebrowser', 'Toggle Minigames Browser', 'keyboard', 'm')
+
+-- Register K key for joining RB
+RegisterCommand('+joinrb', function()
+    if not Local.inLobby and not Local.inEditor and not RBLocal.inLobby and not RBLocal.inRace and not SumoLocal.inLobby and not SumoLocal.inRace then
+        TriggerServerEvent('rb:joinFromBrowser')
+    end
+end, false)
+RegisterCommand('-joinrb', function() end, false)
+RegisterKeyMapping('+joinrb', 'Join Running Back', 'keyboard', 'k')
+
+-- Register L key for joining Sumo
+RegisterCommand('+joinsumo', function()
+    if not Local.inLobby and not Local.inEditor and not RBLocal.inLobby and not RBLocal.inRace and not SumoLocal.inLobby and not SumoLocal.inRace then
+        TriggerServerEvent('sumo:joinFromBrowser')
+    end
+end, false)
+RegisterCommand('-joinsumo', function() end, false)
+RegisterKeyMapping('+joinsumo', 'Join Sumo', 'keyboard', 'l')
 
 -- Disable traffic and peds near player during lobby only
 CreateThread(function()
@@ -865,6 +896,30 @@ CreateThread(function()
                 SendNUIMessage({ type = 'hideCarHud' })
                 wasInVehicle = false
             end
+        end
+    end
+end)
+
+
+-- Heavy traffic always (except lobby)
+CreateThread(function()
+    -- Set max population budgets once at start
+    SetVehiclePopulationBudget(3) -- 3 = max
+    SetPedPopulationBudget(3) -- 3 = max
+    
+    while true do
+        Wait(0)
+        if not Local.inLobby and not Local.inEditor and not RBLocal.inLobby and not RBLocal.inRace and not (SumoLocal and (SumoLocal.inLobby or SumoLocal.inRace)) then
+            -- Set density to 1.0 (normal/full)
+            SetVehicleDensityMultiplierThisFrame(1.0)
+            SetRandomVehicleDensityMultiplierThisFrame(1.0)
+            SetParkedVehicleDensityMultiplierThisFrame(1.0)
+            SetPedDensityMultiplierThisFrame(1.0)
+            SetScenarioPedDensityMultiplierThisFrame(1.0, 1.0)
+            
+            -- Disable suppression
+            SetSomeVehicleDensityMultiplierThisFrame(1.0)
+            SetAmbientVehicleRangeMultiplierThisFrame(1.0)
         end
     end
 end)

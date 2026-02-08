@@ -47,7 +47,8 @@ body { background: transparent; color: white; overflow: hidden; }
 .player { padding: 10px 14px; margin: 6px 0; border-radius: 6px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
 .team-green .player { background: rgba(50,205,50,0.2); }
 .team-purple .player { background: rgba(148,0,211,0.2); }
-.player-role { font-size: 11px; padding: 3px 10px; border-radius: 4px; font-weight: 700; }
+.player-role { font-size: 11px; padding: 3px 10px; border-radius: 4px; font-weight: 700; min-width: 70px; text-align: center; }
+.player span:first-child { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .role-runner { background: #FFD700; color: #000; }
 .role-blocker { background: #555; color: #fff; }
 .player-ready::after { content: ' ✓'; color: #0f0; font-weight: bold; }
@@ -180,6 +181,7 @@ body { background: transparent; color: white; overflow: hidden; }
 .editor-info span { color: #FFD700; font-weight: 600; }
 .editor-controls { font-size: 13px; line-height: 2; opacity: 0.8; }
 .editor-controls .key { background: #FFD700; color: #000; padding: 2px 8px; margin-right: 8px; }
+.editor-note { font-size: 11px; opacity: 0.5; font-style: italic; margin-top: 4px; }
 
 /* Results overlay */
 #results {
@@ -272,6 +274,7 @@ body { background: transparent; color: white; overflow: hidden; }
 .game-status.idle { background: #444; color: #aaa; }
 .game-status.lobby { background: #32CD32; color: #000; }
 .game-status.racing { background: #FFD700; color: #000; }
+.game-status.playing { background: #FFD700; color: #000; }
 .game-status.countdown { background: #FF6B00; color: #fff; }
 .game-status.soon { background: #333; color: #666; }
 .game-capacity {
@@ -346,6 +349,24 @@ body { background: transparent; color: white; overflow: hidden; }
     opacity: 0.5;
     margin-top: 4px;
 }
+.browser-toggle-hint {
+    font-size: 10px;
+    opacity: 0.4;
+    margin-left: 8px;
+    letter-spacing: 1px;
+}
+#minigames-browser.browser-collapsed {
+    min-width: auto;
+    padding: 10px 18px;
+}
+#minigames-browser.browser-collapsed .browser-list {
+    display: none;
+}
+#minigames-browser.browser-collapsed .browser-title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
 
 /* Final Checkpoint Notification */
 .final-checkpoint {
@@ -380,6 +401,78 @@ body { background: transparent; color: white; overflow: hidden; }
 @keyframes pulse {
     from { transform: scale(1); }
     to { transform: scale(1.05); }
+}
+
+/* Round Score (RB) */
+.round-score {
+    background: rgba(0,0,0,0.75);
+    border-radius: 8px;
+    padding: 10px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+.score-team {
+    font-size: 36px;
+    font-weight: 900;
+}
+.score-team.green { color: #32CD32; }
+.score-team.purple { color: #9400D3; }
+.score-dash {
+    font-size: 28px;
+    font-weight: 700;
+    opacity: 0.5;
+}
+
+/* Round Result overlay */
+#round-result {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1500;
+}
+.round-result-content {
+    text-align: center;
+    animation: resultsIn 0.5s ease-out;
+}
+.round-result-title {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-shadow: 0 0 60px currentColor;
+    margin-bottom: 20px;
+}
+.round-result-title.win { color: #32CD32; }
+.round-result-title.lose { color: #DC143C; }
+.round-result-score {
+    font-size: 96px;
+    font-weight: 900;
+    color: #FFD700;
+    text-shadow: 0 0 60px rgba(255,215,0,0.5);
+    letter-spacing: 20px;
+}
+
+/* Celebration phase status */
+.game-status.celebration { background: #FF6B00; color: #fff; }
+
+/* Sumo car carousel */
+.car-arrow {
+    font-size: 28px;
+    font-weight: 900;
+    opacity: 0.5;
+    cursor: pointer;
+    padding: 0 10px;
+    user-select: none;
+}
+.sumo-car {
+    min-width: 180px;
+    font-size: 14px;
 }
 
 /* Car Info HUD */

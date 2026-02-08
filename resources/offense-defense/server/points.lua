@@ -1,7 +1,7 @@
 -- Points System with MySQL persistence
 -- Handles jackpot wagering, winner payouts, and leaderboards
 
-local PlayerCache = {} -- [source] = { id, license, points, wins, losses }
+PlayerCache = {} -- [source] = { id, license, points, wins, losses }
 local CurrentPot = 0
 local CurrentWagers = {} -- [source] = wager amount
 local MySQLReady = false
